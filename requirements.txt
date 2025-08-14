@@ -1,31 +1,37 @@
+# --- STREAMLIT E INTERFACE ---
 streamlit==1.29.0
 streamlit-option-menu==0.3.6
+
+# --- PROCESSAMENTO DE DADOS ---
 pandas==2.0.3
-numpy==1.26.0
-openpyxl==3.1.2
-plotly==5.17.0
+numpy>=1.26.2
+
+# --- VISUALIZAÇÃO ---
 matplotlib==3.7.1
+plotly==5.17.0
 seaborn==0.12.2
-scipy==1.12.0
-schedule==1.2.0
-requests==2.31.0
-urllib3==2.0.4
-pathlib2==2.3.7.post1
-python-dateutil==2.8.2
-pytz==2023.3
-pydantic==2.4.2
+
+# --- EXCEL E ARQUIVOS ---
+openpyxl==3.1.2
 xlsxwriter==3.1.9
 xlrd==2.0.1
-python-dotenv==1.0.0
+
+# --- UTILITÁRIOS ---
+python-dateutil==2.8.2
+pytz==2023.3
+requests==2.31.0
 tqdm==4.66.1
 rich==13.6.0
-watchdog==3.0.0
-zipfile36==0.1.3
-jsonschema==4.19.1
-asyncio-throttle==1.0.2
+
+# --- SEGURANÇA E AMBIENTE ---
 cryptography==41.0.7
-statistics==1.0.3.5
+python-dotenv==1.0.0
 
-# Issue: Package conflicts
-# Solution: Create fresh virtual environment and reinstall
-
+# --- REMOVIDOS (incompatíveis com Streamlit Cloud / Python 3.13) ---
+# scipy
+# schedule
+# watchdog
+# jsonschema
+# statistics
+# pydantic
+# psutil
