@@ -1,37 +1,24 @@
-# --- STREAMLIT E INTERFACE ---
-streamlit==1.29.0
-streamlit-option-menu==0.3.6
-
-# --- PROCESSAMENTO DE DADOS ---
-pandas==2.0.3
-numpy>=1.26.2
-
-# --- VISUALIZAÇÃO ---
-matplotlib==3.7.1
-plotly==5.17.0
-seaborn==0.12.2
-
-# --- EXCEL E ARQUIVOS ---
-openpyxl==3.1.2
-xlsxwriter==3.1.9
-xlrd==2.0.1
-
-# --- UTILITÁRIOS ---
-python-dateutil==2.8.2
-pytz==2023.3
-requests==2.31.0
-tqdm==4.66.1
-rich==13.6.0
-
-# --- SEGURANÇA E AMBIENTE ---
-cryptography==41.0.7
-python-dotenv==1.0.0
-
-# --- REMOVIDOS (incompatíveis com Streamlit Cloud / Python 3.13) ---
-# scipy
-# schedule
-# watchdog
-# jsonschema
-# statistics
-# pydantic
-# psutil
+streamlit
+streamlit-option-menu
+pandas
+numpy
+matplotlib
+plotly
+seaborn
+openpyxl
+xlsxwriter
+xlrd
+python-dateutil
+pytz
+requests
+tqdm
+rich
+cryptography
+python-dotenv
+scipy
+schedule
+watchdog
+jsonschema
+statistics
+pydantic
+psutil
