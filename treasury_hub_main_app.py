@@ -608,18 +608,15 @@ def show_executive_overview():
             <div class="section-content" style="max-height: 400px; overflow-y: auto;">
         """, unsafe_allow_html=True)
         
-        # Real bank data sorted by balance
+        # Real bank data sorted by balance - SIMPLIFIED (no click functionality)
         banks_df = get_bank_positions()
         
         if not banks_df.empty:
             for _, row in banks_df.iterrows():
-                if st.button(f"{row['Bank']}", key=f"bank_{row['Bank']}", use_container_width=True):
-                    st.session_state.selected_bank = row['Bank']
-                    st.session_state.show_bank_trend = True
-                
                 st.markdown(f"""
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; margin-top: -3rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
                     <div>
+                        <div style="font-weight: 600; color: #2d3748; font-size: 0.95rem;">{row['Bank']}</div>
                         <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
                     </div>
                     <div style="text-align: right;">
@@ -627,53 +624,10 @@ def show_executive_overview():
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+        else:
+            st.info("Bank data will appear here once Excel is properly loaded")
         
         st.markdown("</div></div>", unsafe_allow_html=True)
-        
-        # Show bank trend if selected
-        if st.session_state.get('show_bank_trend', False) and st.session_state.get('selected_bank'):
-            selected_bank = st.session_state.selected_bank
-            
-            st.markdown(f"""
-            <div class="dashboard-section">
-                <div class="section-header">
-                    {selected_bank} - 30 Day Trend
-                    <button onclick="this.parentElement.parentElement.style.display='none'">×</button>
-                </div>
-                <div class="section-content">
-            """, unsafe_allow_html=True)
-            
-            bank_trend = get_bank_trend(selected_bank)
-            
-            if not bank_trend.empty:
-                fig_bank = go.Figure()
-                fig_bank.add_trace(go.Scatter(
-                    x=bank_trend['Date'],
-                    y=bank_trend['Value'],
-                    mode='lines+markers',
-                    name=selected_bank,
-                    line=dict(color='#e53e3e', width=2),
-                    marker=dict(size=4)
-                ))
-                
-                fig_bank.update_layout(
-                    height=200,
-                    margin=dict(l=0, r=0, t=10, b=0),
-                    plot_bgcolor='white',
-                    paper_bgcolor='white',
-                    showlegend=False,
-                    xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
-                    yaxis=dict(showgrid=True, gridcolor='#f1f5f9', title='Million EUR')
-                )
-                
-                st.plotly_chart(fig_bank, use_container_width=True)
-            
-            if st.button("Close Bank Trend", key="close_bank_trend"):
-                st.session_state.show_bank_trend = False
-                st.session_state.selected_bank = None
-                st.rerun()
-            
-            st.markdown("</div></div>", unsafe_allow_html=True)
     
     # Executive insights - FIXED
     variation_safe = summary.get('liquidity_variation', 0)
