@@ -499,16 +499,16 @@ def show_executive_overview():
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        # Total Liquidity with variation from row 101
-        variation = summary['liquidity_variation']
-        variation_pct = summary['liquidity_variation_pct']
+        # Total Liquidity with variation from row 101 - FIXED
+        variation = summary.get('liquidity_variation', 0)  # Use .get() to avoid KeyError
+        variation_pct = summary.get('liquidity_variation_pct', 0)
         
         if variation >= 0:
             change_class = "change-positive"
-            change_text = f"+€{variation:.1f}M vs Yesterday"
+            change_text = f"+€{abs(variation):.1f}M vs Yesterday"
         else:
             change_class = "change-negative"
-            change_text = f"€{variation:.1f}M vs Yesterday"
+            change_text = f"-€{abs(variation):.1f}M vs Yesterday"
         
         st.markdown(f"""
         <div class="summary-card">
@@ -537,16 +537,16 @@ def show_executive_overview():
         """, unsafe_allow_html=True)
     
     with col4:
-        # Daily Cash Flow with variation from rows 101 and 102
-        daily_flow = summary['daily_cash_flow']
-        flow_pct = summary['liquidity_variation_pct'] * 100
+        # Daily Cash Flow with variation from rows 101 and 102 - FIXED
+        daily_flow = summary.get('daily_cash_flow', 0)  # Use .get() to avoid KeyError
+        flow_pct = summary.get('liquidity_variation_pct', 0) * 100
         
         if flow_pct >= 0:
             change_class = "change-positive"
-            change_text = f"+{flow_pct:.2f}%"
+            change_text = f"+{abs(flow_pct):.2f}%"
         else:
             change_class = "change-negative"
-            change_text = f"{flow_pct:.2f}%"
+            change_text = f"-{abs(flow_pct):.2f}%"
         
         st.markdown(f"""
         <div class="summary-card">
@@ -672,13 +672,16 @@ def show_executive_overview():
             
             st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # Executive insights
+    # Executive insights - FIXED
+    variation_safe = summary.get('liquidity_variation', 0)
+    variation_pct_safe = summary.get('liquidity_variation_pct', 0)
+    
     st.markdown(f"""
     <div class="insight-box">
         <div class="insight-title">Executive Insight</div>
         <div class="insight-content">
             Current liquidity position at €{summary['total_liquidity']:.1f}M with {summary['bank_accounts']} active accounts across {summary['active_banks']} banking relationships.
-            Daily variation of €{summary['liquidity_variation']:.1f}M ({summary['liquidity_variation_pct']*100:.2f}%).
+            Daily variation of €{variation_safe:.1f}M ({variation_pct_safe*100:.2f}%).
             Portfolio diversification optimized across major financial institutions.
         </div>
     </div>
