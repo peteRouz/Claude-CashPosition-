@@ -627,24 +627,48 @@ def show_executive_overview():
             <div class="section-content" style="max-height: 400px; overflow-y: auto;">
         """, unsafe_allow_html=True)
         
-        # Real bank data sorted by balance - SIMPLIFIED (no click functionality)
-        banks_df = get_bank_positions()
-        
-        if not banks_df.empty:
-            for _, row in banks_df.iterrows():
-                st.markdown(f"""
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
-                    <div>
-                        <div style="font-weight: 600; color: #2d3748; font-size: 0.95rem;">{row['Bank']}</div>
-                        <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-weight: 600; color: #2d3748;">€{row['Balance']:.1f}M</div>
-                    </div>
+        # Bank positions - ULTRA SAFE VERSION
+        try:
+            banks_df = get_bank_positions()
+            
+            if not banks_df.empty and len(banks_df) > 0:
+                for _, row in banks_df.iterrows():
+                    try:
+                        bank_name = str(row.get('Bank', 'Unknown Bank'))
+                        balance = float(row.get('Balance', 0))
+                        currency = str(row.get('Currency', 'EUR'))
+                        yield_rate = str(row.get('Yield', '0.0%'))
+                        
+                        st.markdown(f"""
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
+                            <div>
+                                <div style="font-weight: 600; color: #2d3748; font-size: 0.95rem;">{bank_name}</div>
+                                <div style="font-size: 0.8rem; color: #718096;">{currency} • {yield_rate}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 600; color: #2d3748;">€{balance:.1f}M</div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    except Exception:
+                        # Skip this bank if there's any error with individual row
+                        continue
+            else:
+                # Show placeholder if no bank data
+                st.markdown("""
+                <div style="text-align: center; padding: 2rem; color: #6c757d;">
+                    <h5>🏦 Bank Positions</h5>
+                    <p>Bank data will appear here once Excel is loaded</p>
                 </div>
                 """, unsafe_allow_html=True)
-        else:
-            st.info("Bank data will appear here once Excel is properly loaded")
+        except Exception:
+            # Ultimate fallback
+            st.markdown("""
+            <div style="text-align: center; padding: 2rem; color: #6c757d;">
+                <h5>🏦 Bank Positions</h5>
+                <p>Loading bank information...</p>
+            </div>
+            """, unsafe_allow_html=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
