@@ -390,9 +390,11 @@ def get_executive_summary():
         else:
             total_liquidity = float(total_liquidity_raw) / 1_000_000  # Convert to millions
         
-        # Bank Accounts count from "Lista contas" sheet
+        # Bank Accounts count from "Lista contas" sheet - from row 3 to 98
         lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
-        bank_accounts = len(lista_contas_sheet.dropna(how='all'))  # Count non-empty rows
+        # Count rows from 3 to 98 (indexes 2 to 97) that have data
+        account_rows = lista_contas_sheet.iloc[2:98]  # Row 3 = index 2, Row 98 = index 97
+        bank_accounts = len(account_rows.dropna(how='all'))  # Count non-empty rows only
         
         return {
             'total_liquidity': total_liquidity,
@@ -491,44 +493,66 @@ def show_executive_overview():
     """Show executive overview dashboard"""
     st.markdown('<div class="section-header">Executive Summary</div>', unsafe_allow_html=True)
     
-    # Key metrics cards
+    # Key metrics cards with REAL data
     summary = get_executive_summary()
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
+        # Total Liquidity with variation from row 101
+        variation = summary['liquidity_variation']
+        variation_pct = summary['liquidity_variation_pct']
+        
+        if variation >= 0:
+            change_class = "change-positive"
+            change_text = f"+€{variation:.1f}M vs Yesterday"
+        else:
+            change_class = "change-negative"
+            change_text = f"€{variation:.1f}M vs Yesterday"
+        
         st.markdown(f"""
         <div class="summary-card">
             <h3>Total Liquidity</h3>
             <div class="summary-value">€{summary['total_liquidity']:.1f}M</div>
-            <div class="summary-change change-positive">+€2.1M vs Yesterday</div>
+            <div class="summary-change {change_class}">{change_text}</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown(f"""
         <div class="summary-card">
-            <h3>Bank Accounts</h3>
-            <div class="summary-value">{summary['bank_accounts']}</div>
-            <div class="summary-change change-positive">Active Accounts</div>
+            <h3>Total Inflow</h3>
+            <div class="summary-value">€5.2M</div>
+            <div class="summary-change change-positive">To be configured</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown(f"""
         <div class="summary-card">
-            <h3>Active Banks</h3>
-            <div class="summary-value">{summary['active_banks']}</div>
-            <div class="summary-change change-positive">Relationships</div>
+            <h3>Total Outflow</h3>
+            <div class="summary-value">€3.8M</div>
+            <div class="summary-change change-negative">To be configured</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col4:
+        # Daily Cash Flow with variation from rows 101 and 102
+        daily_flow = summary['daily_cash_flow']
+        flow_pct = summary['liquidity_variation_pct'] * 100
+        
+        if flow_pct >= 0:
+            change_class = "change-positive"
+            change_text = f"+{flow_pct:.2f}%"
+        else:
+            change_class = "change-negative"
+            change_text = f"{flow_pct:.2f}%"
+        
         st.markdown(f"""
         <div class="summary-card">
             <h3>Daily Cash Flow</h3>
-            <div class="summary-value">€3.4M</div>
-            <div class="summary-change change-positive">+€1.2M Inflow Today</div>
+            <div class="summary-value">€{daily_flow:.1f}M</div>
+            <div class="summary-change {change_class}">{change_text}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -545,67 +569,117 @@ def show_executive_overview():
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Professional liquidity chart
-        dates = pd.date_range(start='2025-01-01', periods=30, freq='D')
-        liquidity = 45 + np.cumsum(np.random.normal(0.1, 0.8, 30))
+        # Real liquidity chart from row 99 data
+        trend_data = get_liquidity_trend_30_days()
         
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=dates,
-            y=liquidity,
-            mode='lines',
-            name='Total Liquidity',
-            line=dict(color='#2b6cb0', width=3),
-            fill='tonexty',
-            fillcolor='rgba(43, 108, 176, 0.1)'
-        ))
+        if not trend_data.empty:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=trend_data['Date'],
+                y=trend_data['Value'],
+                mode='lines',
+                name='Total Liquidity',
+                line=dict(color='#2b6cb0', width=3),
+                fill='tonexty',
+                fillcolor='rgba(43, 108, 176, 0.1)'
+            ))
+            
+            fig.update_layout(
+                height=300,
+                margin=dict(l=0, r=0, t=20, b=0),
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                showlegend=False,
+                xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
+                yaxis=dict(showgrid=True, gridcolor='#f1f5f9', title='Million EUR')
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
         
-        fig.update_layout(
-            height=300,
-            margin=dict(l=0, r=0, t=20, b=0),
-            plot_bgcolor='white',
-            paper_bgcolor='white',
-            showlegend=False,
-            xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
-            yaxis=dict(showgrid=True, gridcolor='#f1f5f9', title='Million EUR')
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
         st.markdown("</div></div>", unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">Cash Positions</div>
-            <div class="section-content">
+            <div class="section-content" style="max-height: 400px; overflow-y: auto;">
         """, unsafe_allow_html=True)
         
-        cash_df = get_cash_positions()
+        # Real bank data sorted by balance
+        banks_df = get_bank_positions()
         
-        # Professional bank breakdown
-        for _, row in cash_df.iterrows():
-            st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
-                <div>
-                    <div style="font-weight: 600; color: #2d3748;">{row['Bank']}</div>
-                    <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
+        if not banks_df.empty:
+            for _, row in banks_df.iterrows():
+                if st.button(f"{row['Bank']}", key=f"bank_{row['Bank']}", use_container_width=True):
+                    st.session_state.selected_bank = row['Bank']
+                    st.session_state.show_bank_trend = True
+                
+                st.markdown(f"""
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; margin-top: -3rem; margin-bottom: 1rem;">
+                    <div>
+                        <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 600; color: #2d3748;">€{row['Balance']:.1f}M</div>
+                    </div>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 600; color: #2d3748;">€{row['Balance']:.1f}M</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
+        
+        # Show bank trend if selected
+        if st.session_state.get('show_bank_trend', False) and st.session_state.get('selected_bank'):
+            selected_bank = st.session_state.selected_bank
+            
+            st.markdown(f"""
+            <div class="dashboard-section">
+                <div class="section-header">
+                    {selected_bank} - 30 Day Trend
+                    <button onclick="this.parentElement.parentElement.style.display='none'">×</button>
+                </div>
+                <div class="section-content">
+            """, unsafe_allow_html=True)
+            
+            bank_trend = get_bank_trend(selected_bank)
+            
+            if not bank_trend.empty:
+                fig_bank = go.Figure()
+                fig_bank.add_trace(go.Scatter(
+                    x=bank_trend['Date'],
+                    y=bank_trend['Value'],
+                    mode='lines+markers',
+                    name=selected_bank,
+                    line=dict(color='#e53e3e', width=2),
+                    marker=dict(size=4)
+                ))
+                
+                fig_bank.update_layout(
+                    height=200,
+                    margin=dict(l=0, r=0, t=10, b=0),
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    showlegend=False,
+                    xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
+                    yaxis=dict(showgrid=True, gridcolor='#f1f5f9', title='Million EUR')
+                )
+                
+                st.plotly_chart(fig_bank, use_container_width=True)
+            
+            if st.button("Close Bank Trend", key="close_bank_trend"):
+                st.session_state.show_bank_trend = False
+                st.session_state.selected_bank = None
+                st.rerun()
+            
+            st.markdown("</div></div>", unsafe_allow_html=True)
     
     # Executive insights
-    st.markdown("""
+    st.markdown(f"""
     <div class="insight-box">
         <div class="insight-title">Executive Insight</div>
         <div class="insight-content">
-            Current liquidity position is optimal at €47.2M, representing 94% of target range. 
-            FX exposure within risk parameters. Recommend maintaining current positioning ahead of ECB meeting.
-            Portfolio yield outperforming benchmark by 47 basis points.
+            Current liquidity position at €{summary['total_liquidity']:.1f}M with {summary['bank_accounts']} active accounts across {summary['active_banks']} banking relationships.
+            Daily variation of €{summary['liquidity_variation']:.1f}M ({summary['liquidity_variation_pct']*100:.2f}%).
+            Portfolio diversification optimized across major financial institutions.
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -769,9 +843,6 @@ def main():
         st.info("Portfolio management module - Available in next update")
     else:
         show_executive_overview()
-
-if __name__ == "__main__":
-    main()
 
 if __name__ == "__main__":
     main()
