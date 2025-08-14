@@ -365,46 +365,52 @@ st.markdown("""
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'overview'
 
-# Real data from Excel/Database
-@st.cache_data
+# Real data from Excel - FIXED VERSION
+@st.cache_data(ttl=300)  # Cache for 5 minutes only
 def get_executive_summary():
     """Get REAL executive summary from Excel data"""
     try:
-        # Import config and database modules
-        from config import EXCEL_FILE_PATH, DATABASE_PATH
-        import pandas as pd
-        import sqlite3
+        # Try to read Excel file directly
+        excel_file = "TREASURY DASHBOARD.xlsx"  # Direct file name
         
-        # Try to get data from Excel first
-        if EXCEL_FILE_PATH.exists():
-            # Total Liquidity from "Tabelas" tab, column C, row 92
-            tabelas_sheet = pd.read_excel(EXCEL_FILE_PATH, sheet_name="Tabelas", header=None)
-            total_liquidity = tabelas_sheet.iloc[91, 2]  # Row 92 = index 91, Column C = index 2
-            if pd.isna(total_liquidity):
-                total_liquidity = 0
-            total_liquidity = float(total_liquidity) / 1_000_000  # Convert to millions
-            
-            # Bank Accounts count from "Lista contas" sheet (currently 98 rows)
-            lista_contas_sheet = pd.read_excel(EXCEL_FILE_PATH, sheet_name="Lista contas", header=None)
-            bank_accounts = len(lista_contas_sheet.dropna(how='all'))  # Count non-empty rows
-            
+        # Check if file exists in current directory or data folder
+        if os.path.exists(excel_file):
+            file_path = excel_file
+        elif os.path.exists(f"data/{excel_file}"):
+            file_path = f"data/{excel_file}"
         else:
-            # Fallback values if Excel not available
-            total_liquidity = 47.2
-            bank_accounts = 98
+            raise FileNotFoundError("Excel file not found")
+        
+        # Read Total Liquidity from "Tabelas" tab, column C, row 92
+        tabelas_sheet = pd.read_excel(file_path, sheet_name="Tabelas", header=None)
+        total_liquidity_raw = tabelas_sheet.iloc[91, 2]  # Row 92 = index 91, Column C = index 2
+        
+        if pd.isna(total_liquidity_raw):
+            total_liquidity = 0
+        else:
+            total_liquidity = float(total_liquidity_raw) / 1_000_000  # Convert to millions
+        
+        # Bank Accounts count from "Lista contas" sheet
+        lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
+        bank_accounts = len(lista_contas_sheet.dropna(how='all'))  # Count non-empty rows
         
         return {
             'total_liquidity': total_liquidity,
             'bank_accounts': bank_accounts,
-            'active_banks': 13  # Fixed value as requested
+            'active_banks': 13,  # Fixed value as requested
+            'last_updated': datetime.now().strftime("%H:%M")
         }
         
     except Exception as e:
-        # Fallback to safe values if any error occurs
+        # Show error in Streamlit for debugging
+        st.error(f"⚠️ Cannot read Excel file: {e}")
+        
+        # Return manual values while troubleshooting
         return {
-            'total_liquidity': 47.2,
+            'total_liquidity': 32.6,  # Manual value from your Excel
             'bank_accounts': 98,
-            'active_banks': 13
+            'active_banks': 13,
+            'last_updated': "Manual"
         }
 
 @st.cache_data
@@ -439,7 +445,7 @@ def create_professional_header():
         <div class="header-content">
             <div>
                 <div class="company-brand">Treasury Operations Center</div>
-                <div class="company-subtitle">Real-time Financial Command & Control</div>
+                <div class="company-subtitle">Real-time Financial Command & Control • Last Update: {summary.get('last_updated', 'Now')}</div>
             </div>
             <div class="header-metrics">
                 <div class="header-metric">
@@ -763,6 +769,9 @@ def main():
         st.info("Portfolio management module - Available in next update")
     else:
         show_executive_overview()
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()
