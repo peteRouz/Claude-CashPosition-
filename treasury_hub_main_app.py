@@ -569,10 +569,10 @@ def show_executive_overview():
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Real liquidity chart from row 99 data
+        # Real liquidity chart from row 99 data - FIXED
         trend_data = get_liquidity_trend_30_days()
         
-        if not trend_data.empty:
+        if not trend_data.empty and len(trend_data) > 0:
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=trend_data['Date'],
@@ -595,6 +595,9 @@ def show_executive_overview():
             )
             
             st.plotly_chart(fig, use_container_width=True)
+        else:
+            # Show placeholder if no data
+            st.info("📊 Liquidity trend chart will appear here once data is available")
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
