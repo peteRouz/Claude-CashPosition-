@@ -16,6 +16,7 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 import json
+import re  # Added for regex operations
 
 # Configure page
 st.set_page_config(
@@ -569,35 +570,53 @@ def show_executive_overview():
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Real liquidity chart from row 99 data - FIXED
-        trend_data = get_liquidity_trend_30_days()
-        
-        if not trend_data.empty and len(trend_data) > 0:
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=trend_data['Date'],
-                y=trend_data['Value'],
-                mode='lines',
-                name='Total Liquidity',
-                line=dict(color='#2b6cb0', width=3),
-                fill='tonexty',
-                fillcolor='rgba(43, 108, 176, 0.1)'
-            ))
+        # Liquidity chart - ULTRA SAFE VERSION
+        try:
+            trend_data = get_liquidity_trend_30_days()
             
-            fig.update_layout(
-                height=300,
-                margin=dict(l=0, r=0, t=20, b=0),
-                plot_bgcolor='white',
-                paper_bgcolor='white',
-                showlegend=False,
-                xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
-                yaxis=dict(showgrid=True, gridcolor='#f1f5f9', title='Million EUR')
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            # Show placeholder if no data
-            st.info("📊 Liquidity trend chart will appear here once data is available")
+            if not trend_data.empty and len(trend_data) > 1:
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=trend_data['Date'],
+                    y=trend_data['Value'],
+                    mode='lines',
+                    name='Total Liquidity',
+                    line=dict(color='#2b6cb0', width=3),
+                    fill='tonexty',
+                    fillcolor='rgba(43, 108, 176, 0.1)'
+                ))
+                
+                fig.update_layout(
+                    height=300,
+                    margin=dict(l=0, r=0, t=20, b=0),
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    showlegend=False,
+                    xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
+                    yaxis=dict(showgrid=True, gridcolor='#f1f5f9', title='Million EUR')
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                # Simple placeholder instead of chart
+                st.markdown("""
+                <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+                    <div style="text-align: center; color: #6c757d;">
+                        <h4>📊 Liquidity Trend Chart</h4>
+                        <p>Chart will load once data is available</p>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        except Exception as e:
+            # Fallback placeholder if chart fails
+            st.markdown("""
+            <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+                <div style="text-align: center; color: #6c757d;">
+                    <h4>📊 Liquidity Trend</h4>
+                    <p>Chart temporarily unavailable</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
