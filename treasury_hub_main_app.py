@@ -497,12 +497,21 @@ def show_executive_overview():
     # Key metrics cards with REAL data
     summary = get_executive_summary()
     
+    # Show data source for debugging
+    data_source = summary.get('data_source', 'Unknown')
+    if 'DEMO DATA' in data_source:
+        st.warning(f"⚠️ **{data_source}** - Click below to see why Excel isn't loading")
+        
+        with st.expander("🔍 **Debug: Why isn't Excel loading?**"):
+            debug_file_system()
+    else:
+        st.success(f"✅ **{data_source}** - Excel file loaded successfully!")
+    
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         # Total Liquidity with variation from row 101 - FIXED
-        variation = summary.get('liquidity_variation', 0)  # Use .get() to avoid KeyError
-        variation_pct = summary.get('liquidity_variation_pct', 0)
+        variation = summary.get('liquidity_variation', 0)
         
         if variation >= 0:
             change_class = "change-positive"
@@ -539,7 +548,7 @@ def show_executive_overview():
     
     with col4:
         # Daily Cash Flow with variation from rows 101 and 102 - FIXED
-        daily_flow = summary.get('daily_cash_flow', 0)  # Use .get() to avoid KeyError
+        daily_flow = summary.get('daily_cash_flow', 0)
         flow_pct = summary.get('liquidity_variation_pct', 0) * 100
         
         if flow_pct >= 0:
@@ -570,53 +579,34 @@ def show_executive_overview():
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Liquidity chart - ULTRA SAFE VERSION
-        try:
-            trend_data = get_liquidity_trend_30_days()
+        # ALWAYS show chart with demo data to test
+        trend_data = get_liquidity_trend_30_days()
+        
+        if not trend_data.empty and len(trend_data) > 1:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=trend_data['Date'],
+                y=trend_data['Value'],
+                mode='lines',
+                name='Total Liquidity',
+                line=dict(color='#2b6cb0', width=3),
+                fill='tonexty',
+                fillcolor='rgba(43, 108, 176, 0.1)'
+            ))
             
-            if not trend_data.empty and len(trend_data) > 1:
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=trend_data['Date'],
-                    y=trend_data['Value'],
-                    mode='lines',
-                    name='Total Liquidity',
-                    line=dict(color='#2b6cb0', width=3),
-                    fill='tonexty',
-                    fillcolor='rgba(43, 108, 176, 0.1)'
-                ))
-                
-                fig.update_layout(
-                    height=300,
-                    margin=dict(l=0, r=0, t=20, b=0),
-                    plot_bgcolor='white',
-                    paper_bgcolor='white',
-                    showlegend=False,
-                    xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
-                    yaxis=dict(showgrid=True, gridcolor='#f1f5f9', title='Million EUR')
-                )
-                
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                # Simple placeholder instead of chart
-                st.markdown("""
-                <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
-                    <div style="text-align: center; color: #6c757d;">
-                        <h4>📊 Liquidity Trend Chart</h4>
-                        <p>Chart will load once data is available</p>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        except Exception as e:
-            # Fallback placeholder if chart fails
-            st.markdown("""
-            <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
-                <div style="text-align: center; color: #6c757d;">
-                    <h4>📊 Liquidity Trend</h4>
-                    <p>Chart temporarily unavailable</p>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            fig.update_layout(
+                height=300,
+                margin=dict(l=0, r=0, t=20, b=0),
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                showlegend=False,
+                xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
+                yaxis=dict(showgrid=True, gridcolor='#f1f5f9', title='Million EUR')
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.error("Chart data is empty - check debug info above")
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
@@ -627,52 +617,36 @@ def show_executive_overview():
             <div class="section-content" style="max-height: 400px; overflow-y: auto;">
         """, unsafe_allow_html=True)
         
-        # Bank positions - ULTRA SAFE VERSION
-        try:
-            banks_df = get_bank_positions()
-            
-            if not banks_df.empty and len(banks_df) > 0:
-                for _, row in banks_df.iterrows():
-                    try:
-                        bank_name = str(row.get('Bank', 'Unknown Bank'))
-                        balance = float(row.get('Balance', 0))
-                        currency = str(row.get('Currency', 'EUR'))
-                        yield_rate = str(row.get('Yield', '0.0%'))
-                        
-                        st.markdown(f"""
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
-                            <div>
-                                <div style="font-weight: 600; color: #2d3748; font-size: 0.95rem;">{bank_name}</div>
-                                <div style="font-size: 0.8rem; color: #718096;">{currency} • {yield_rate}</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-weight: 600; color: #2d3748;">€{balance:.1f}M</div>
-                            </div>
+        # ALWAYS show banks to test
+        banks_df = get_bank_positions()
+        
+        if not banks_df.empty and len(banks_df) > 0:
+            for _, row in banks_df.iterrows():
+                try:
+                    bank_name = str(row.get('Bank', 'Unknown Bank'))
+                    balance = float(row.get('Balance', 0))
+                    currency = str(row.get('Currency', 'EUR'))
+                    yield_rate = str(row.get('Yield', '0.0%'))
+                    
+                    st.markdown(f"""
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
+                        <div>
+                            <div style="font-weight: 600; color: #2d3748; font-size: 0.95rem;">{bank_name}</div>
+                            <div style="font-size: 0.8rem; color: #718096;">{currency} • {yield_rate}</div>
                         </div>
-                        """, unsafe_allow_html=True)
-                    except Exception:
-                        # Skip this bank if there's any error with individual row
-                        continue
-            else:
-                # Show placeholder if no bank data
-                st.markdown("""
-                <div style="text-align: center; padding: 2rem; color: #6c757d;">
-                    <h5>🏦 Bank Positions</h5>
-                    <p>Bank data will appear here once Excel is loaded</p>
-                </div>
-                """, unsafe_allow_html=True)
-        except Exception:
-            # Ultimate fallback
-            st.markdown("""
-            <div style="text-align: center; padding: 2rem; color: #6c757d;">
-                <h5>🏦 Bank Positions</h5>
-                <p>Loading bank information...</p>
-            </div>
-            """, unsafe_allow_html=True)
+                        <div style="text-align: right;">
+                            <div style="font-weight: 600; color: #2d3748;">€{balance:.1f}M</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"Error displaying bank: {e}")
+        else:
+            st.error("Bank data is empty - check debug info above")
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # Executive insights - FIXED
+    # Executive insights
     variation_safe = summary.get('liquidity_variation', 0)
     variation_pct_safe = summary.get('liquidity_variation_pct', 0)
     
