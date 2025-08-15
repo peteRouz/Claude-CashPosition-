@@ -377,22 +377,36 @@ def get_dynamic_liquidity_data():
                     
                     # Verificar se temos dados válidos
                     if pd.notna(date_value) and pd.notna(eur_value) and eur_value != 0:
-                        # Converter data se necessário
-                        if isinstance(date_value, str):
-                            try:
-                                # Tentar diferentes formatos de data
-                                if '-' in str(date_value):
-                                    parsed_date = pd.to_datetime(date_value, format='%d-%b-%y')
-                                else:
-                                    parsed_date = pd.to_datetime(date_value)
-                            except:
+                        # CONVERSÃO DE DATAS MELHORADA
+                        try:
+                            if isinstance(date_value, str):
+                                # Se for string, tentar diferentes formatos
+                                date_str = str(date_value).strip()
                                 try:
-                                    parsed_date = pd.to_datetime(date_value)
+                                    # Formato DD-MMM-YY (ex: 31-Jul-25)
+                                    parsed_date = pd.to_datetime(date_str, format='%d-%b-%y')
                                 except:
-                                    print(f"⚠️ Coluna {col_letter}: Não consegue converter data {date_value}")
-                                    continue
-                        else:
-                            parsed_date = date_value
+                                    try:
+                                        # Formato DD/MM/YYYY
+                                        parsed_date = pd.to_datetime(date_str, format='%d/%m/%Y')
+                                    except:
+                                        # Último recurso - deixar pandas decidir
+                                        parsed_date = pd.to_datetime(date_str)
+                            elif isinstance(date_value, (int, float)):
+                                # Se for número (Excel serial date)
+                                # Excel conta dias desde 1900-01-01, mas com bug de ano bissexto
+                                from datetime import datetime, timedelta
+                                if date_value > 59:  # Depois do bug do Excel
+                                    parsed_date = datetime(1900, 1, 1) + timedelta(days=date_value - 2)
+                                else:
+                                    parsed_date = datetime(1900, 1, 1) + timedelta(days=date_value - 1)
+                            else:
+                                # Se já for datetime
+                                parsed_date = pd.to_datetime(date_value)
+                                
+                        except Exception as date_error:
+                            print(f"⚠️ Coluna {col_letter}: Erro conversão data {date_value}: {date_error}")
+                            continue
                         
                         # Converter valor para milhões de EUR
                         eur_millions = float(eur_value) / 1_000_000
@@ -416,11 +430,21 @@ def get_dynamic_liquidity_data():
             combined.sort(key=lambda x: x[0])
             dates, values = zip(*combined)
             
-            # Filtrar últimos 30 dias
-            if len(dates) > 30:
-                dates = dates[-30:]
-                values = values[-30:]
-                print(f"📅 Filtrados últimos 30 dias de {len(combined)} dias disponíveis")
+            # Filtrar últimos 30 dias a partir da data mais recente
+            if len(dates) > 0:
+                latest_date = dates[-1]  # Data mais recente
+                from datetime import timedelta
+                cutoff_date = latest_date - timedelta(days=30)
+                
+                # Filtrar apenas datas dos últimos 30 dias
+                filtered_data = [(d, v) for d, v in zip(dates, values) if d >= cutoff_date]
+                
+                if filtered_data:
+                    dates, values = zip(*filtered_data)
+                    print(f"📅 Filtrados últimos 30 dias: {len(filtered_data)} dias de {len(combined)} disponíveis")
+                    print(f"📅 Período: {dates[0].strftime('%d-%b-%y')} até {dates[-1].strftime('%d-%b-%y')}")
+                else:
+                    print(f"⚠️ Nenhum dado nos últimos 30 dias")
             
             return {
                 'dates': list(dates),
