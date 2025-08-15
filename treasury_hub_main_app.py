@@ -540,26 +540,28 @@ def show_executive_overview():
         # Get bank positions from Tabelas sheet (your 13 banks)
         banks_df = get_bank_positions_from_tabelas()
         
-        # Create a container with fixed height and scroll
-        st.markdown("""
-        <div style="height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem;">
-        """, unsafe_allow_html=True)
+        # OPTION 1: Use Streamlit's native dataframe with custom styling
+        # Prepare data for display
+        display_df = banks_df.copy()
+        display_df['Details'] = display_df['Currency'] + ' • ' + display_df['Yield']
+        display_df['Amount'] = display_df['Balance'].apply(lambda x: f"€{x:.1f}M")
         
-        # Display banks inside the scrollable container
-        for _, row in banks_df.iterrows():
-            st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
-                <div>
-                    <div style="font-weight: 600; color: #2d3748;">{row['Bank']}</div>
-                    <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 600; color: #2d3748;">€{row['Balance']:.1f}M</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+        # Select only columns we want to show
+        final_df = display_df[['Bank', 'Details', 'Amount']].copy()
+        final_df.columns = ['Bank', 'Details', 'Balance']
         
-        st.markdown("</div>", unsafe_allow_html=True)  # Close scrollable container
+        # Display as dataframe with limited height
+        st.dataframe(
+            final_df,
+            use_container_width=True,
+            height=300,  # Fixed height with scroll
+            hide_index=True,
+            column_config={
+                "Bank": st.column_config.TextColumn("Bank", width="medium"),
+                "Details": st.column_config.TextColumn("Details", width="small"),
+                "Balance": st.column_config.TextColumn("Balance", width="small"),
+            }
+        )
         
         st.markdown("""
             </div>
