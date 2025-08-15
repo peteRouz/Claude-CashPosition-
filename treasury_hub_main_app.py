@@ -371,15 +371,16 @@ def get_dynamic_liquidity_data():
                     col_letter = col_index_to_letter(col_index)
                     found_columns.append(col_letter)
                     
-                    # LÓGICA CORRETA: Data está 3 colunas ATRÁS
-                    date_col_index = col_index - 3
+                    # LÓGICA CORRETA: Data está 2 colunas ATRÁS (não 3!)
+                    # Estrutura: VALOR, CÂMBIO, VALOR EUR
+                    date_col_index = col_index - 2
                     
                     if date_col_index >= 0:
-                        # Ler data da linha 1, 3 colunas atrás
+                        # Ler data da linha 1, 2 colunas atrás
                         date_value = lista_contas_sheet.iloc[0, date_col_index]
                         date_col_letter = col_index_to_letter(date_col_index)
                     else:
-                        print(f"⚠️ Coluna {col_letter}: Não consegue ir 3 colunas atrás")
+                        print(f"⚠️ Coluna {col_letter}: Não consegue ir 2 colunas atrás")
                         continue
                     
                     # Ler valor da linha 99 (índice 98) da coluna VALOR EUR
@@ -682,6 +683,13 @@ def show_executive_overview():
         try:
             liquidity_data = get_dynamic_liquidity_data()
             
+            # MOSTRAR DEBUG NA PÁGINA
+            if liquidity_data['source'].startswith('Sample'):
+                st.warning("⚠️ A usar dados de exemplo - Excel não encontrado ou erro na leitura")
+                with st.expander("🔍 Debug Info"):
+                    st.write("Tentando ler de: TREASURY DASHBOARD.xlsx, aba 'Lista contas'")
+                    st.write("Verifica se o ficheiro existe e se a aba tem o nome correto")
+            
             # Criar gráfico com dados reais
             fig = go.Figure()
             fig.add_trace(go.Scatter(
@@ -726,7 +734,8 @@ def show_executive_overview():
                 st.caption(f"📊 {liquidity_data['source']} • {len(liquidity_data['dates'])} dias • Último: €{liquidity_data['values'][-1]:.1f}M")
             
         except Exception as e:
-            st.error(f"Erro ao carregar gráfico: {e}")
+            st.error(f"❌ Erro ao carregar gráfico: {e}")
+            st.info("🔍 A usar dados de exemplo como fallback")
             # Fallback para gráfico original se houver erro
             dates = pd.date_range(start=datetime.now() - timedelta(days=7), periods=7, freq='D')
             values = [28.5, 30.2, 31.8, 29.4, 32.1, 31.7, 32.6]
