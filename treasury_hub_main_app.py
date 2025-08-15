@@ -429,7 +429,7 @@ def get_dynamic_liquidity_data():
                         dates.append(parsed_date)
                         values.append(eur_millions)
                         
-                        print(f"✅ Coluna {col_letter} (data em {date_col_letter}): {parsed_date} = €{eur_millions:.1f}M")
+                        print(f"✅ Coluna {col_letter} (data em {date_col_letter}): {parsed_date.strftime('%d-%b-%y')} = €{eur_millions:.1f}M")
                     else:
                         print(f"⚠️ Coluna {col_letter}: Dados inválidos (data={date_value}, valor={eur_value})")
                         
