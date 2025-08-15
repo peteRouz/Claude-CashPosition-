@@ -337,9 +337,10 @@ def get_bank_positions_from_tabelas():
                 # Sort by balance (highest first)
                 banks_df = banks_df.sort_values('Balance', ascending=False)
                 
-                # Add realistic yields
-                yields = ['2.1%', '2.0%', '1.9%', '1.8%', '1.7%', '1.6%', '1.5%', '1.4%', '1.3%', '1.2%', '1.1%', '1.0%', '0.9%']
-                banks_df['Yield'] = yields[:len(banks_df)]
+                # Calculate percentage of total for each bank
+                total_balance = banks_df['Balance'].sum()
+                banks_df['Percentage'] = (banks_df['Balance'] / total_balance * 100).round(1)
+                banks_df['Yield'] = banks_df['Percentage'].apply(lambda x: f"{x}%")
                 
                 return banks_df
             else:
@@ -355,22 +356,30 @@ def get_fallback_banks():
     """Fallback bank data based on your image - 13 banks ordered by balance"""
     # Based on your Tabelas screenshot, organized by highest balance
     banks_data = [
-        {'Bank': 'UME BANK', 'Balance': 5.668, 'Currency': 'EUR', 'Yield': '2.1%'},
-        {'Bank': 'Commerzbank', 'Balance': 3.561, 'Currency': 'EUR', 'Yield': '2.0%'},
-        {'Bank': 'FKP Bank', 'Balance': 3.55, 'Currency': 'EUR', 'Yield': '1.9%'},
-        {'Bank': 'FNB (SA)', 'Balance': 3.34, 'Currency': 'EUR', 'Yield': '1.8%'},
-        {'Bank': 'Handelsbanken', 'Balance': 1.650, 'Currency': 'EUR', 'Yield': '1.7%'},
-        {'Bank': 'Swedbank', 'Balance': 1.45, 'Currency': 'EUR', 'Yield': '1.6%'},
-        {'Bank': 'HSBC', 'Balance': 1.513, 'Currency': 'EUR', 'Yield': '1.5%'},
-        {'Bank': 'ING Bank', 'Balance': 1.347, 'Currency': 'EUR', 'Yield': '1.4%'},
-        {'Bank': 'Jyske Bank', 'Balance': 0.760, 'Currency': 'EUR', 'Yield': '1.3%'},
-        {'Bank': 'BPC BANK', 'Balance': 0.738, 'Currency': 'EUR', 'Yield': '1.2%'},
-        {'Bank': 'SEB', 'Balance': 0.200, 'Currency': 'EUR', 'Yield': '1.1%'},
-        {'Bank': 'UBS', 'Balance': 0.72, 'Currency': 'EUR', 'Yield': '1.0%'},
-        {'Bank': 'LBCB', 'Balance': 0.57, 'Currency': 'EUR', 'Yield': '0.9%'}
+        {'Bank': 'UME BANK', 'Balance': 5.668, 'Currency': 'EUR'},
+        {'Bank': 'Commerzbank', 'Balance': 3.561, 'Currency': 'EUR'},
+        {'Bank': 'FKP Bank', 'Balance': 3.55, 'Currency': 'EUR'},
+        {'Bank': 'FNB (SA)', 'Balance': 3.34, 'Currency': 'EUR'},
+        {'Bank': 'Handelsbanken', 'Balance': 1.650, 'Currency': 'EUR'},
+        {'Bank': 'Swedbank', 'Balance': 1.45, 'Currency': 'EUR'},
+        {'Bank': 'HSBC', 'Balance': 1.513, 'Currency': 'EUR'},
+        {'Bank': 'ING Bank', 'Balance': 1.347, 'Currency': 'EUR'},
+        {'Bank': 'Jyske Bank', 'Balance': 0.760, 'Currency': 'EUR'},
+        {'Bank': 'BPC BANK', 'Balance': 0.738, 'Currency': 'EUR'},
+        {'Bank': 'SEB', 'Balance': 0.200, 'Currency': 'EUR'},
+        {'Bank': 'UBS', 'Balance': 0.72, 'Currency': 'EUR'},
+        {'Bank': 'LBCB', 'Balance': 0.57, 'Currency': 'EUR'}
     ]
     
-    return pd.DataFrame(banks_data)
+    banks_df = pd.DataFrame(banks_data)
+    banks_df = banks_df.sort_values('Balance', ascending=False)
+    
+    # Calculate percentage of total for each bank
+    total_balance = banks_df['Balance'].sum()
+    banks_df['Percentage'] = (banks_df['Balance'] / total_balance * 100).round(1)
+    banks_df['Yield'] = banks_df['Percentage'].apply(lambda x: f"{x}%")
+    
+    return banks_df
 
 def create_professional_header():
     """Create executive header with real-time metrics"""
