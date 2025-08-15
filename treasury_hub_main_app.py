@@ -194,6 +194,15 @@ st.markdown("""
         height: 300px;  /* Fixed height to show exactly 6 banks */
         overflow-y: auto;
         padding-right: 0.5rem;
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* Style the Streamlit container */
+    .bank-list-container > div {
+        height: 300px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
     }
     
     .bank-list-container::-webkit-scrollbar {
@@ -212,16 +221,6 @@ st.markdown("""
     
     .bank-list-container::-webkit-scrollbar-thumb:hover {
         background: #a0aec0;
-    }
-    
-    /* Bank item styling */
-    .bank-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 0;
-        border-bottom: 1px solid #f1f5f9;
-        min-height: 50px;  /* Fixed height per bank item */
     }
     
     /* Executive insights */
@@ -536,33 +535,30 @@ def show_executive_overview():
         <div class="dashboard-section">
             <div class="section-header">Cash Positions</div>
             <div class="section-content">
+                <div class="bank-list-container">
         """, unsafe_allow_html=True)
         
         # Get bank positions from Tabelas sheet (your 13 banks)
         banks_df = get_bank_positions_from_tabelas()
         
-        # Create the scrollable container with all banks inside
-        banks_html = '<div class="bank-list-container">'
-        
-        for _, row in banks_df.iterrows():
-            banks_html += f"""
-            <div class="bank-item">
-                <div>
-                    <div style="font-weight: 600; color: #2d3748;">{row['Bank']}</div>
-                    <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
+        # Use Streamlit container with custom styling
+        container = st.container()
+        with container:
+            for _, row in banks_df.iterrows():
+                st.markdown(f"""
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9; min-height: 50px;">
+                    <div>
+                        <div style="font-weight: 600; color: #2d3748;">{row['Bank']}</div>
+                        <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 600; color: #2d3748;">€{row['Balance']:.1f}M</div>
+                    </div>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 600; color: #2d3748;">€{row['Balance']:.1f}M</div>
-                </div>
-            </div>
-            """
-        
-        banks_html += '</div>'
-        
-        # Display the complete HTML structure
-        st.markdown(banks_html, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
         
         st.markdown("""
+                </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
