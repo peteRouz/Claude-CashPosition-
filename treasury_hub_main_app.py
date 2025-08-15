@@ -540,14 +540,14 @@ def show_executive_overview():
         # Get bank positions from Tabelas sheet (your 13 banks)
         banks_df = get_bank_positions_from_tabelas()
         
-        # Create one big HTML string with all banks
+        # Create one big HTML string with all banks - CLEAN SYSTEM FONT
         banks_html = """
         <div style="height: 300px; overflow-y: auto; padding: 1.5rem;">
         """
         
         for _, row in banks_df.iterrows():
             banks_html += f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
                 <div>
                     <div style="font-weight: 600; color: #2d3748; font-size: 0.95rem;">{row['Bank']}</div>
                     <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
