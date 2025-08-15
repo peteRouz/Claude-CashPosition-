@@ -713,7 +713,11 @@ def show_executive_overview():
                 xaxis=dict(
                     showgrid=True, 
                     gridcolor='#f1f5f9',
-                    tickformat='%d %b'
+                    tickformat='%d %b',
+                    tickmode='array',
+                    tickvals=liquidity_data['dates'],  # Forçar todas as datas
+                    ticktext=[d.strftime('%d %b') for d in liquidity_data['dates']],  # Formato personalizado
+                    tickangle=45  # Rodar texto para caber melhor
                 ),
                 yaxis=dict(
                     showgrid=True, 
