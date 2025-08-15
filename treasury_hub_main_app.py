@@ -189,9 +189,9 @@ st.markdown("""
         color: #22543d;
     }
     
-    /* Scrollable bank list */
+    /* Scrollable bank list - FIXED HEIGHT FOR 6 BANKS */
     .bank-list-container {
-        max-height: 400px;
+        height: 300px;  /* Fixed height to show exactly 6 banks */
         overflow-y: auto;
         padding-right: 0.5rem;
     }
@@ -212,6 +212,16 @@ st.markdown("""
     
     .bank-list-container::-webkit-scrollbar-thumb:hover {
         background: #a0aec0;
+    }
+    
+    /* Bank item styling */
+    .bank-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f1f5f9;
+        min-height: 50px;  /* Fixed height per bank item */
     }
     
     /* Executive insights */
@@ -532,10 +542,10 @@ def show_executive_overview():
         # Get bank positions from Tabelas sheet (your 13 banks)
         banks_df = get_bank_positions_from_tabelas()
         
-        # Display all banks with scroll
+        # Display all banks with scroll - FIXED WINDOW FOR 6 BANKS
         for _, row in banks_df.iterrows():
             st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
+            <div class="bank-item">
                 <div>
                     <div style="font-weight: 600; color: #2d3748;">{row['Bank']}</div>
                     <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
