@@ -540,20 +540,20 @@ def show_executive_overview():
         # Get bank positions from Tabelas sheet (your 13 banks)
         banks_df = get_bank_positions_from_tabelas()
         
-        # Create one big HTML string with all banks - CLEAN SYSTEM FONT
+        # Create one big HTML string with all banks - EXACT STREAMLIT FONT
         banks_html = """
-        <div style="height: 300px; overflow-y: auto; padding: 1.5rem;">
+        <div style="height: 300px; overflow-y: auto; padding: 1.5rem; font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;">
         """
         
         for _, row in banks_df.iterrows():
             banks_html += f"""
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
                 <div>
-                    <div style="font-weight: 600; color: #2d3748; font-size: 0.95rem;">{row['Bank']}</div>
-                    <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
+                    <div style="font-weight: 700; color: #262730; font-size: 0.95rem; font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;">{row['Bank']}</div>
+                    <div style="font-weight: 400; color: #8e8ea0; font-size: 0.8rem; font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;">{row['Currency']} • {row['Yield']}</div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-weight: 600; color: #2d3748;">€{row['Balance']:.1f}M</div>
+                    <div style="font-weight: 700; color: #262730; font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;">€{row['Balance']:.1f}M</div>
                 </div>
             </div>
             """
