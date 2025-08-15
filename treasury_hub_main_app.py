@@ -327,7 +327,13 @@ def get_dynamic_liquidity_data():
             return get_sample_liquidity_data()
         
         # Ler a aba "Lista contas"
-        lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
+        try:
+            lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
+            print(f"✅ Aba 'Lista contas' encontrada! Dimensões: {lista_contas_sheet.shape}")
+        except Exception as e:
+            print(f"❌ Erro ao ler aba 'Lista contas': {e}")
+            print("📋 Abas disponíveis:", pd.ExcelFile(file_path).sheet_names)
+            return get_sample_liquidity_data()
         
         dates = []
         values = []
@@ -343,6 +349,14 @@ def get_dynamic_liquidity_data():
                 return chr(65 + first) + chr(65 + second)  # AA, AB, etc.
         
         print("🔍 Procurando colunas 'VALOR EUR' na linha 2...")
+        print(f"📊 Dimensões da folha: {lista_contas_sheet.shape[0]} linhas x {lista_contas_sheet.shape[1]} colunas")
+        
+        # Debug: Mostrar algumas células da linha 2 para verificar conteúdo
+        print("🔍 Primeiras 20 células da linha 2:")
+        for i in range(min(20, lista_contas_sheet.shape[1])):
+            cell_value = lista_contas_sheet.iloc[1, i]
+            if pd.notna(cell_value) and str(cell_value).strip():
+                print(f"  Coluna {col_index_to_letter(i)}: '{cell_value}'")
         
         # Varrer TODA a folha procurando "VALOR EUR" na linha 2
         for col_index in range(lista_contas_sheet.shape[1]):
