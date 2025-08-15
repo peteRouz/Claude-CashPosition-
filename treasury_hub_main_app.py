@@ -310,10 +310,11 @@ def get_executive_summary():
 @st.cache_data(ttl=300)
 def get_dynamic_liquidity_data():
     """
-    Lê dados dinâmicos da aba 'Lista contas' seguindo o padrão:
-    - Cada 4 colunas = 1 dia (VALOR, CÂMBIO, VALOR EUR, Variation)
-    - Data: linha 1 da 3ª coluna de cada grupo
-    - Valor: linha 99 da 3ª coluna de cada grupo
+    NOVA LÓGICA: Procura por "VALOR EUR" na linha 2 de toda a folha
+    - Para cada coluna que tem "VALOR EUR" na linha 2:
+      - Lê a data da linha 1 dessa coluna
+      - Lê o valor da linha 99 dessa coluna
+    - Automático para qualquer número de dias (30 dias para trás + novos dias)
     """
     try:
         excel_file = "TREASURY DASHBOARD.xlsx"
@@ -330,6 +331,7 @@ def get_dynamic_liquidity_data():
         
         dates = []
         values = []
+        found_columns = []
         
         # Converter índices de coluna para letras
         def col_index_to_letter(index):
@@ -340,53 +342,59 @@ def get_dynamic_liquidity_data():
                 second = (index - 26) % 26
                 return chr(65 + first) + chr(65 + second)  # AA, AB, etc.
         
-        # Procurar padrão a partir da coluna onde começam os dados (aproximadamente coluna 400)
-        # Baseado na imagem: colunas NU, NV, NW, NX... 
-        start_col = 395  # Aproximadamente coluna NU
+        print("🔍 Procurando colunas 'VALOR EUR' na linha 2...")
         
-        # Procurar padrão de 4 colunas por dia até ao fim da folha
-        for col_group_start in range(start_col, min(lista_contas_sheet.shape[1], start_col + 100), 4):
+        # Varrer TODA a folha procurando "VALOR EUR" na linha 2
+        for col_index in range(lista_contas_sheet.shape[1]):
             try:
-                # A 3ª coluna do grupo (índice +2) é VALOR EUR
-                valor_eur_col = col_group_start + 2
+                # Verificar linha 2 (índice 1) se contém "VALOR EUR"
+                linha2_value = lista_contas_sheet.iloc[1, col_index]
                 
-                if valor_eur_col >= lista_contas_sheet.shape[1]:
-                    break
-                
-                # Ler data da linha 1 (índice 0)
-                date_value = lista_contas_sheet.iloc[0, valor_eur_col]
-                
-                # Ler valor da linha 99 (índice 98)
-                if lista_contas_sheet.shape[0] > 98:
-                    eur_value = lista_contas_sheet.iloc[98, valor_eur_col]
-                else:
-                    continue
-                
-                # Verificar se temos dados válidos
-                if pd.notna(date_value) and pd.notna(eur_value) and eur_value != 0:
-                    # Converter data se necessário
-                    if isinstance(date_value, str):
-                        try:
-                            # Tentar diferentes formatos de data
-                            if '-' in str(date_value):
-                                parsed_date = pd.to_datetime(date_value, format='%d-%b-%y')
-                            else:
-                                parsed_date = pd.to_datetime(date_value)
-                        except:
-                            parsed_date = date_value
+                if pd.notna(linha2_value) and str(linha2_value).strip().upper() == "VALOR EUR":
+                    
+                    # Encontrou uma coluna VALOR EUR!
+                    col_letter = col_index_to_letter(col_index)
+                    found_columns.append(col_letter)
+                    
+                    # Ler data da linha 1 (índice 0)
+                    date_value = lista_contas_sheet.iloc[0, col_index]
+                    
+                    # Ler valor da linha 99 (índice 98)
+                    if lista_contas_sheet.shape[0] > 98:
+                        eur_value = lista_contas_sheet.iloc[98, col_index]
                     else:
-                        parsed_date = date_value
+                        print(f"⚠️ Coluna {col_letter}: Linha 99 não existe")
+                        continue
                     
-                    # Converter valor para milhões de EUR
-                    eur_millions = float(eur_value) / 1_000_000
-                    
-                    dates.append(parsed_date)
-                    values.append(eur_millions)
-                    
-                    print(f"Coluna {col_index_to_letter(valor_eur_col)}: {parsed_date} = €{eur_millions:.1f}M")
-                    
+                    # Verificar se temos dados válidos
+                    if pd.notna(date_value) and pd.notna(eur_value) and eur_value != 0:
+                        # Converter data se necessário
+                        if isinstance(date_value, str):
+                            try:
+                                # Tentar diferentes formatos de data
+                                if '-' in str(date_value):
+                                    parsed_date = pd.to_datetime(date_value, format='%d-%b-%y')
+                                else:
+                                    parsed_date = pd.to_datetime(date_value)
+                            except:
+                                parsed_date = date_value
+                        else:
+                            parsed_date = date_value
+                        
+                        # Converter valor para milhões de EUR
+                        eur_millions = float(eur_value) / 1_000_000
+                        
+                        dates.append(parsed_date)
+                        values.append(eur_millions)
+                        
+                        print(f"✅ Coluna {col_letter}: {parsed_date} = €{eur_millions:.1f}M")
+                    else:
+                        print(f"⚠️ Coluna {col_letter}: Dados inválidos (data={date_value}, valor={eur_value})")
+                        
             except Exception as e:
                 continue
+        
+        print(f"📊 Encontradas {len(found_columns)} colunas VALOR EUR: {found_columns}")
         
         if len(dates) > 0 and len(values) > 0:
             # Ordenar por data
@@ -397,13 +405,15 @@ def get_dynamic_liquidity_data():
             return {
                 'dates': list(dates),
                 'values': list(values),
-                'source': 'Excel Real Data'
+                'source': f'Excel Real Data ({len(dates)} dias)',
+                'columns_found': found_columns
             }
         else:
+            print("❌ Nenhuma coluna VALOR EUR válida encontrada")
             return get_sample_liquidity_data()
             
     except Exception as e:
-        print(f"Erro ao ler Excel: {e}")
+        print(f"❌ Erro ao ler Excel: {e}")
         return get_sample_liquidity_data()
 
 def get_sample_liquidity_data():
@@ -652,7 +662,10 @@ def show_executive_overview():
             st.plotly_chart(fig, use_container_width=True)
             
             # Mostrar info sobre fonte de dados
-            st.caption(f"📊 {liquidity_data['source']} • {len(liquidity_data['dates'])} dias • Último: €{liquidity_data['values'][-1]:.1f}M")
+            if 'columns_found' in liquidity_data:
+                st.caption(f"📊 {liquidity_data['source']} • Colunas encontradas: {', '.join(liquidity_data['columns_found'])} • Último: €{liquidity_data['values'][-1]:.1f}M")
+            else:
+                st.caption(f"📊 {liquidity_data['source']} • {len(liquidity_data['dates'])} dias • Último: €{liquidity_data['values'][-1]:.1f}M")
             
         except Exception as e:
             st.error(f"Erro ao carregar gráfico: {e}")
