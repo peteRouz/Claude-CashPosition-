@@ -711,13 +711,14 @@ def show_executive_overview():
                 paper_bgcolor='white',
                 showlegend=False,
                 xaxis=dict(
-                    showgrid=True, 
+                    showgrid=False,  # Remove linhas verticais
                     gridcolor='#f1f5f9',
                     tickformat='%d %b',
                     tickmode='array',
                     tickvals=liquidity_data['dates'],  # Forçar todas as datas
                     ticktext=[d.strftime('%d %b') for d in liquidity_data['dates']],  # Formato personalizado
-                    tickangle=45  # Rodar texto para caber melhor
+                    tickangle=45,  # Rodar texto para caber melhor
+                    type='category'  # Remove gaps entre datas
                 ),
                 yaxis=dict(
                     showgrid=True, 
