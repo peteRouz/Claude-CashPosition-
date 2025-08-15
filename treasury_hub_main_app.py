@@ -350,16 +350,25 @@ def get_dynamic_liquidity_data():
                 # Verificar linha 2 (índice 1) se contém "VALOR EUR"
                 linha2_value = lista_contas_sheet.iloc[1, col_index]
                 
-                if pd.notna(linha2_value) and str(linha2_value).strip().upper() == "VALOR EUR":
+                # Verificar se contém "VALOR EUR" (pode ter formatação diferente)
+                if pd.notna(linha2_value) and "VALOR" in str(linha2_value).upper() and "EUR" in str(linha2_value).upper():
                     
                     # Encontrou uma coluna VALOR EUR!
                     col_letter = col_index_to_letter(col_index)
                     found_columns.append(col_letter)
                     
-                    # Ler data da linha 1 (índice 0)
-                    date_value = lista_contas_sheet.iloc[0, col_index]
+                    # LÓGICA CORRETA: Data está 3 colunas ATRÁS
+                    date_col_index = col_index - 3
                     
-                    # Ler valor da linha 99 (índice 98)
+                    if date_col_index >= 0:
+                        # Ler data da linha 1, 3 colunas atrás
+                        date_value = lista_contas_sheet.iloc[0, date_col_index]
+                        date_col_letter = col_index_to_letter(date_col_index)
+                    else:
+                        print(f"⚠️ Coluna {col_letter}: Não consegue ir 3 colunas atrás")
+                        continue
+                    
+                    # Ler valor da linha 99 (índice 98) da coluna VALOR EUR
                     if lista_contas_sheet.shape[0] > 98:
                         eur_value = lista_contas_sheet.iloc[98, col_index]
                     else:
@@ -377,7 +386,11 @@ def get_dynamic_liquidity_data():
                                 else:
                                     parsed_date = pd.to_datetime(date_value)
                             except:
-                                parsed_date = date_value
+                                try:
+                                    parsed_date = pd.to_datetime(date_value)
+                                except:
+                                    print(f"⚠️ Coluna {col_letter}: Não consegue converter data {date_value}")
+                                    continue
                         else:
                             parsed_date = date_value
                         
@@ -387,11 +400,12 @@ def get_dynamic_liquidity_data():
                         dates.append(parsed_date)
                         values.append(eur_millions)
                         
-                        print(f"✅ Coluna {col_letter}: {parsed_date} = €{eur_millions:.1f}M")
+                        print(f"✅ Coluna {col_letter} (data em {date_col_letter}): {parsed_date} = €{eur_millions:.1f}M")
                     else:
                         print(f"⚠️ Coluna {col_letter}: Dados inválidos (data={date_value}, valor={eur_value})")
                         
             except Exception as e:
+                print(f"❌ Erro na coluna {col_index}: {e}")
                 continue
         
         print(f"📊 Encontradas {len(found_columns)} colunas VALOR EUR: {found_columns}")
@@ -401,6 +415,12 @@ def get_dynamic_liquidity_data():
             combined = list(zip(dates, values))
             combined.sort(key=lambda x: x[0])
             dates, values = zip(*combined)
+            
+            # Filtrar últimos 30 dias
+            if len(dates) > 30:
+                dates = dates[-30:]
+                values = values[-30:]
+                print(f"📅 Filtrados últimos 30 dias de {len(combined)} dias disponíveis")
             
             return {
                 'dates': list(dates),
