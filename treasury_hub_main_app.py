@@ -308,6 +308,122 @@ def get_executive_summary():
         }
 
 @st.cache_data(ttl=300)
+def get_dynamic_liquidity_data():
+    """
+    Lê dados dinâmicos da aba 'Lista contas' seguindo o padrão:
+    - Cada 4 colunas = 1 dia (VALOR, CÂMBIO, VALOR EUR, Variation)
+    - Data: linha 1 da 3ª coluna de cada grupo
+    - Valor: linha 99 da 3ª coluna de cada grupo
+    """
+    try:
+        excel_file = "TREASURY DASHBOARD.xlsx"
+        
+        if os.path.exists(excel_file):
+            file_path = excel_file
+        elif os.path.exists(f"data/{excel_file}"):
+            file_path = f"data/{excel_file}"
+        else:
+            return get_sample_liquidity_data()
+        
+        # Ler a aba "Lista contas"
+        lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
+        
+        dates = []
+        values = []
+        
+        # Converter índices de coluna para letras
+        def col_index_to_letter(index):
+            if index < 26:
+                return chr(65 + index)  # A-Z
+            else:
+                first = (index - 26) // 26
+                second = (index - 26) % 26
+                return chr(65 + first) + chr(65 + second)  # AA, AB, etc.
+        
+        # Procurar padrão a partir da coluna onde começam os dados (aproximadamente coluna 400)
+        # Baseado na imagem: colunas NU, NV, NW, NX... 
+        start_col = 395  # Aproximadamente coluna NU
+        
+        # Procurar padrão de 4 colunas por dia até ao fim da folha
+        for col_group_start in range(start_col, min(lista_contas_sheet.shape[1], start_col + 100), 4):
+            try:
+                # A 3ª coluna do grupo (índice +2) é VALOR EUR
+                valor_eur_col = col_group_start + 2
+                
+                if valor_eur_col >= lista_contas_sheet.shape[1]:
+                    break
+                
+                # Ler data da linha 1 (índice 0)
+                date_value = lista_contas_sheet.iloc[0, valor_eur_col]
+                
+                # Ler valor da linha 99 (índice 98)
+                if lista_contas_sheet.shape[0] > 98:
+                    eur_value = lista_contas_sheet.iloc[98, valor_eur_col]
+                else:
+                    continue
+                
+                # Verificar se temos dados válidos
+                if pd.notna(date_value) and pd.notna(eur_value) and eur_value != 0:
+                    # Converter data se necessário
+                    if isinstance(date_value, str):
+                        try:
+                            # Tentar diferentes formatos de data
+                            if '-' in str(date_value):
+                                parsed_date = pd.to_datetime(date_value, format='%d-%b-%y')
+                            else:
+                                parsed_date = pd.to_datetime(date_value)
+                        except:
+                            parsed_date = date_value
+                    else:
+                        parsed_date = date_value
+                    
+                    # Converter valor para milhões de EUR
+                    eur_millions = float(eur_value) / 1_000_000
+                    
+                    dates.append(parsed_date)
+                    values.append(eur_millions)
+                    
+                    print(f"Coluna {col_index_to_letter(valor_eur_col)}: {parsed_date} = €{eur_millions:.1f}M")
+                    
+            except Exception as e:
+                continue
+        
+        if len(dates) > 0 and len(values) > 0:
+            # Ordenar por data
+            combined = list(zip(dates, values))
+            combined.sort(key=lambda x: x[0])
+            dates, values = zip(*combined)
+            
+            return {
+                'dates': list(dates),
+                'values': list(values),
+                'source': 'Excel Real Data'
+            }
+        else:
+            return get_sample_liquidity_data()
+            
+    except Exception as e:
+        print(f"Erro ao ler Excel: {e}")
+        return get_sample_liquidity_data()
+
+def get_sample_liquidity_data():
+    """Dados de exemplo para demonstração quando não há Excel"""
+    sample_dates = [
+        "05-Aug-25", "06-Aug-25", "07-Aug-25", "08-Aug-25", 
+        "11-Aug-25", "12-Aug-25", "13-Aug-25"
+    ]
+    
+    sample_values = [28.5, 30.2, 31.8, 29.4, 32.1, 31.7, 32.6]  # Valores em milhões EUR
+    
+    dates = [datetime.strptime(date, "%d-%b-%y") for date in sample_dates]
+    
+    return {
+        'dates': dates,
+        'values': sample_values,
+        'source': 'Sample Data (Excel não encontrado)'
+    }
+
+@st.cache_data(ttl=300)
 def get_bank_positions_from_tabelas():
     """Get bank positions from Tabelas sheet, rows 79-91, sorted by balance"""
     try:
@@ -488,46 +604,67 @@ def show_executive_overview():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">
-                Liquidity Trend (30 Days)
+                Liquidity Trend (Dynamic)
                 <span class="status-indicator status-good">Healthy</span>
             </div>
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Professional liquidity chart
-        dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30, freq='D')
+        # NOVO GRÁFICO DINÂMICO - Lê da aba "Lista contas"
+        try:
+            liquidity_data = get_dynamic_liquidity_data()
+            
+            # Criar gráfico com dados reais
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=liquidity_data['dates'],
+                y=liquidity_data['values'],
+                mode='lines',
+                name='Total Liquidity',
+                line=dict(color='#2b6cb0', width=3),
+                fill='tonexty',
+                fillcolor='rgba(43, 108, 176, 0.1)',
+                hovertemplate='<b>%{x|%d %b %Y}</b><br>€%{y:.1f}M<extra></extra>'
+            ))
+            
+            # Layout idêntico ao original mas com escala 0-80M
+            fig.update_layout(
+                height=300,
+                margin=dict(l=0, r=0, t=20, b=0),
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                showlegend=False,
+                xaxis=dict(
+                    showgrid=True, 
+                    gridcolor='#f1f5f9',
+                    tickformat='%d %b'
+                ),
+                yaxis=dict(
+                    showgrid=True, 
+                    gridcolor='#f1f5f9', 
+                    title='Million EUR',
+                    range=[0, 80],  # Escala 0-80M como pediste
+                    tickvals=[0, 10, 20, 30, 40, 50, 60, 70, 80],
+                    ticktext=['0', '10', '20', '30', '40', '50', '60', '70', '80']
+                )
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Mostrar info sobre fonte de dados
+            st.caption(f"📊 {liquidity_data['source']} • {len(liquidity_data['dates'])} dias • Último: €{liquidity_data['values'][-1]:.1f}M")
+            
+        except Exception as e:
+            st.error(f"Erro ao carregar gráfico: {e}")
+            # Fallback para gráfico original se houver erro
+            dates = pd.date_range(start=datetime.now() - timedelta(days=7), periods=7, freq='D')
+            values = [28.5, 30.2, 31.8, 29.4, 32.1, 31.7, 32.6]
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=dates, y=values, mode='lines', line=dict(color='#2b6cb0', width=3)))
+            fig.update_layout(height=300, margin=dict(l=0, r=0, t=20, b=0), yaxis=dict(range=[0, 80]))
+            st.plotly_chart(fig, use_container_width=True)
         
-        # Create realistic liquidity trend around 32.6M
-        base_value = 32.6
-        variations = np.random.normal(0, 0.3, 30)
-        liquidity_values = [base_value]
-        
-        for i in range(1, 30):
-            new_value = liquidity_values[-1] + variations[i]
-            liquidity_values.append(max(30, min(35, new_value)))  # Keep in realistic range
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=dates,
-            y=liquidity_values,
-            mode='lines',
-            name='Total Liquidity',
-            line=dict(color='#2b6cb0', width=3),
-            fill='tonexty',
-            fillcolor='rgba(43, 108, 176, 0.1)'
-        ))
-        
-        fig.update_layout(
-            height=300,
-            margin=dict(l=0, r=0, t=20, b=0),
-            plot_bgcolor='white',
-            paper_bgcolor='white',
-            showlegend=False,
-            xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
-            yaxis=dict(showgrid=True, gridcolor='#f1f5f9', title='Million EUR')
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
         st.markdown("</div></div>", unsafe_allow_html=True)
     
     with col2:
