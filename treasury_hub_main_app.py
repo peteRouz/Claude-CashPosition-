@@ -534,34 +534,34 @@ def show_executive_overview():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">Cash Positions</div>
-            <div class="section-content">
+            <div class="section-content" style="padding: 0;">
         """, unsafe_allow_html=True)
         
         # Get bank positions from Tabelas sheet (your 13 banks)
         banks_df = get_bank_positions_from_tabelas()
         
-        # OPTION 1: Use Streamlit's native dataframe with custom styling
-        # Prepare data for display
-        display_df = banks_df.copy()
-        display_df['Details'] = display_df['Currency'] + ' • ' + display_df['Yield']
-        display_df['Amount'] = display_df['Balance'].apply(lambda x: f"€{x:.1f}M")
+        # Create one big HTML string with all banks
+        banks_html = """
+        <div style="height: 300px; overflow-y: auto; padding: 1.5rem;">
+        """
         
-        # Select only columns we want to show
-        final_df = display_df[['Bank', 'Details', 'Amount']].copy()
-        final_df.columns = ['Bank', 'Details', 'Balance']
+        for _, row in banks_df.iterrows():
+            banks_html += f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
+                <div>
+                    <div style="font-weight: 600; color: #2d3748; font-size: 0.95rem;">{row['Bank']}</div>
+                    <div style="font-size: 0.8rem; color: #718096;">{row['Currency']} • {row['Yield']}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 600; color: #2d3748;">€{row['Balance']:.1f}M</div>
+                </div>
+            </div>
+            """
         
-        # Display as dataframe with limited height
-        st.dataframe(
-            final_df,
-            use_container_width=True,
-            height=300,  # Fixed height with scroll
-            hide_index=True,
-            column_config={
-                "Bank": st.column_config.TextColumn("Bank", width="medium"),
-                "Details": st.column_config.TextColumn("Details", width="small"),
-                "Balance": st.column_config.TextColumn("Balance", width="small"),
-            }
-        )
+        banks_html += "</div>"
+        
+        # Display as single HTML block
+        st.components.v1.html(banks_html, height=300, scrolling=True)
         
         st.markdown("""
             </div>
