@@ -319,8 +319,9 @@ def get_daily_cash_flow():
                     if pd.notna(cell_value_102):
                         try:
                             numeric_value_102 = float(cell_value_102)
-                            if numeric_value_102 != 0:
-                                percentage_value = numeric_value_102
+                            # Aceitar qualquer valor numérico, incluindo 0
+                            percentage_value = numeric_value_102
+                            break  # Parar logo que encontrar o primeiro valor
                         except ValueError:
                             pass
                 
@@ -341,16 +342,12 @@ def get_daily_cash_flow():
             cash_flow_text = "€0"
         
         # Formatar Percentage
-        if percentage_value != 0:
-            if percentage_value >= 0:
-                percentage_text = f"+{percentage_value:.1f}% vs Yesterday"
-                percentage_color = 'positive'
-            else:
-                percentage_text = f"{percentage_value:.1f}% vs Yesterday"
-                percentage_color = 'negative'
-        else:
-            percentage_text = "+0% vs Yesterday"
+        if percentage_value >= 0:
+            percentage_text = f"+{percentage_value:.1f}% vs Yesterday"
             percentage_color = 'positive'
+        else:
+            percentage_text = f"{percentage_value:.1f}% vs Yesterday"
+            percentage_color = 'negative'
         
         print(f"✅ Daily Cash Flow encontrado: {cash_flow_value} → {cash_flow_text}")
         print(f"✅ Percentage encontrada: {percentage_value} → {percentage_text}")
