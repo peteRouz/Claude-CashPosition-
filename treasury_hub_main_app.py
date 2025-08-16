@@ -336,10 +336,20 @@ def get_daily_cash_flow():
         
         # Formatar Percentage
         if percentage_value >= 0:
-            percentage_text = f"+{percentage_value:.1f}% vs Yesterday"
+            # Multiplicar por 100 se for um decimal (formato Excel)
+            if abs(percentage_value) < 1:
+                display_percentage = percentage_value * 100
+            else:
+                display_percentage = percentage_value
+            percentage_text = f"+{display_percentage:.1f}% vs Yesterday"
             percentage_color = 'positive'
         else:
-            percentage_text = f"{percentage_value:.1f}% vs Yesterday"
+            # Multiplicar por 100 se for um decimal (formato Excel)
+            if abs(percentage_value) < 1:
+                display_percentage = percentage_value * 100
+            else:
+                display_percentage = percentage_value
+            percentage_text = f"{display_percentage:.1f}% vs Yesterday"
             percentage_color = 'negative'
         
         print(f"✅ Daily Cash Flow encontrado: {cash_flow_value} → {cash_flow_text}")
