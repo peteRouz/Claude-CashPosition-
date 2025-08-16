@@ -1249,13 +1249,184 @@ def show_fx_risk():
             values.append(eur_bought / 1000000)
             colors.append('#00ff88')
         
-        if categories:
+    # Create FX activity chart
+    if st.session_state.fx_deals:
+        # Process deals for visualization
+        approved_deals = [deal for deal in st.session_state.fx_deals if deal['status'] == 'Approved']
+        
+        if approved_deals:
+            # Separate data processing
+            sell_currencies = {}
+            buy_currencies = {}
+            eur_sold_total = 0
+            eur_bought_total = 0
+            
+            # Color mapping for currencies
+            currency_colors = {
+                'SEK': '#ffd700',  # Gold
+                'NOK': '#4682b4',  # Steel Blue
+                'GBP': '#dc143c',  # Crimson
+                'USD': '#9370db',  # Medium Purple
+                'CAD': '#20b2aa',  # Light Sea Green
+                'AUD': '#87ceeb',  # Sky Blue
+                'EUR': '#00ff88',  # Bright Green
+                'PLN': '#696969',  # Dim Gray
+                'DKK': '#8b4513',  # Saddle Brown
+                'IDR': '#2f4f4f',  # Dark Slate Gray
+                'CHF': '#008b8b',  # Dark Cyan
+                'ZAR': '#ff6347',  # Tomato
+                'MYR': '#da70d6',  # Orchid
+                'SGD': '#32cd32'   # Lime Green
+            }
+            
+            for deal in approved_deals:
+                amount = deal['amount']
+                
+                if deal['sell_currency'] == 'EUR':
+                    # Selling EUR to buy other currency
+                    eur_sold_total += amount
+                    buy_curr = deal['buy_currency']
+                    if buy_curr not in buy_currencies:
+                        buy_currencies[buy_curr] = 0
+                    buy_currencies[buy_curr] += amount
+                elif deal['buy_currency'] == 'EUR':
+                    # Buying EUR with other currency
+                    eur_bought_total += amount
+                    sell_curr = deal['sell_currency']
+                    if sell_curr not in sell_currencies:
+                        sell_currencies[sell_curr] = 0
+                    sell_currencies[sell_curr] += amount
+                else:
+                    # Currency to currency (non-EUR)
+                    sell_curr = deal['sell_currency']
+                    buy_curr = deal['buy_currency']
+                    if sell_curr not in sell_currencies:
+                        sell_currencies[sell_curr] = 0
+                    if buy_curr not in buy_currencies:
+                        buy_currencies[buy_curr] = 0
+                    sell_currencies[sell_curr] += amount
+                    buy_currencies[buy_curr] += amount
+            
+            # Create chart data in the order: SELL | BUY EUR | SELL EUR | BUY
+            categories = []
+            values = []
+            colors = []
+            
+            # 1. SELL section (currencies sold, not EUR)
+            for currency in sorted(sell_currencies.keys()):
+                categories.append(currency)
+                values.append(sell_currencies[currency] / 1_000_000)
+                colors.append(currency_colors.get(currency, '#888888'))
+            
+            # 2. BUY EUR section
+            if eur_bought_total > 0:
+                categories.append('Buy €')
+                values.append(eur_bought_total / 1_000_000)
+                colors.append('#00ff88')
+            
+            # 3. SELL EUR section
+            if eur_sold_total > 0:
+                categories.append('Sell €')
+                values.append(eur_sold_total / 1_000_000)
+                colors.append('#00ff88')
+            
+            # 4. BUY section (currencies bought, not EUR)
+            for currency in sorted(buy_currencies.keys()):
+                categories.append(currency)
+                values.append(buy_currencies[currency] / 1_000_000)
+                colors.append(currency_colors.get(currency, '#888888'))
+            
+            # Create the chart
             fig = go.Figure(data=[
                 go.Bar(
                     x=categories,
                     y=values,
                     marker_color=colors,
                     text=[f"€{v:.1f}M" for v in values],
+                    textposition='outside',
+                    textfont=dict(size=10, color='#2d3748', family='Inter'),
+                    width=0.7,
+                    marker=dict(
+                        line=dict(color='rgba(0,0,0,0.1)', width=1)
+                    )
+                )
+            ])
+            
+            # Add section labels
+            fig.add_annotation(
+                x=len([c for c in categories if c in sell_currencies]) / 2 - 0.5,
+                y=max(values) * 1.15,
+                text="<b>SELL</b>",
+                showarrow=False,
+                font=dict(size=12, color='#2d3748', family='Inter'),
+                xanchor='center'
+            )
+            
+            # Calculate positions for other sections
+            sell_count = len([c for c in categories if c in sell_currencies])
+            buy_eur_count = 1 if eur_bought_total > 0 else 0
+            sell_eur_count = 1 if eur_sold_total > 0 else 0
+            
+            if buy_eur_count > 0:
+                fig.add_annotation(
+                    x=sell_count + buy_eur_count/2 - 0.5,
+                    y=max(values) * 1.15,
+                    text="<b>BUY EUR</b>",
+                    showarrow=False,
+                    font=dict(size=12, color='#00ff88', family='Inter'),
+                    xanchor='center'
+                )
+            
+            if sell_eur_count > 0:
+                fig.add_annotation(
+                    x=sell_count + buy_eur_count + sell_eur_count/2 - 0.5,
+                    y=max(values) * 1.15,
+                    text="<b>SELL EUR</b>",
+                    showarrow=False,
+                    font=dict(size=12, color='#00ff88', family='Inter'),
+                    xanchor='center'
+                )
+            
+            if len(buy_currencies) > 0:
+                fig.add_annotation(
+                    x=sell_count + buy_eur_count + sell_eur_count + len(buy_currencies)/2 - 0.5,
+                    y=max(values) * 1.15,
+                    text="<b>BUY</b>",
+                    showarrow=False,
+                    font=dict(size=12, color='#2d3748', family='Inter'),
+                    xanchor='center'
+                )
+            
+            fig.update_layout(
+                height=280,
+                margin=dict(l=20, r=20, t=40, b=40),
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                showlegend=False,
+                xaxis=dict(
+                    tickangle=0,
+                    tickfont=dict(size=11, color='#2d3748', family='Inter'),
+                    showgrid=False,
+                    zeroline=False,
+                    showline=True,
+                    linecolor='#e2e8f0'
+                ),
+                yaxis=dict(
+                    title='Million EUR',
+                    titlefont=dict(size=12, color='#2d3748', family='Inter'),
+                    tickfont=dict(size=10, color='#2d3748', family='Inter'),
+                    showgrid=True,
+                    gridcolor='#f7fafc',
+                    zeroline=True,
+                    zerolinecolor='#e2e8f0',
+                    showline=True,
+                    linecolor='#e2e8f0'
+                ),
+                bargap=0.2,
+                font=dict(family='Inter, sans-serif')
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)],
                     textposition='auto',
                 )
             ])
