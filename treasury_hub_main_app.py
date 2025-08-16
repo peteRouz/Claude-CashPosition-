@@ -258,7 +258,84 @@ if 'current_page' not in st.session_state:
 
 # Data functions
 @st.cache_data(ttl=300)
-def get_executive_summary():
+def get_latest_variation():
+    """
+    Lê a variação mais recente da linha 101 da aba 'Lista contas'
+    Procura da direita para esquerda o primeiro valor numérico
+    """
+    try:
+        excel_file = "TREASURY DASHBOARD.xlsx"
+        
+        if os.path.exists(excel_file):
+            file_path = excel_file
+        elif os.path.exists(f"data/{excel_file}"):
+            file_path = f"data/{excel_file}"
+        else:
+            return {'variation': 0, 'text': '+€0.0M vs Yesterday', 'color': 'positive'}
+        
+        # Ler a aba "Lista contas"
+        lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
+        
+        print("🔍 Procurando variação na linha 101...")
+        
+        # Verificar se linha 101 existe (índice 100)
+        if lista_contas_sheet.shape[0] <= 100:
+            print("⚠️ Linha 101 não existe")
+            return {'variation': 0, 'text': '+€0.0M vs Yesterday', 'color': 'positive'}
+        
+        # Procurar da direita para esquerda o primeiro valor numérico
+        for col_index in range(lista_contas_sheet.shape[1] - 1, -1, -1):
+            try:
+                cell_value = lista_contas_sheet.iloc[100, col_index]  # Linha 101 = índice 100
+                
+                # Verificar se é um valor numérico válido
+                if pd.notna(cell_value):
+                    # Tentar converter para float
+                    try:
+                        numeric_value = float(cell_value)
+                        
+                        # Ignorar zeros (provavelmente células vazias)
+                        if numeric_value != 0:
+                            # VALOR EXATO - SEM CONVERSÃO
+                            
+                            # Determinar texto e cor
+                            if numeric_value >= 0:
+                                text = f"+€{numeric_value:,.0f} vs Yesterday"
+                                color = 'positive'
+                            else:
+                                text = f"-€{abs(numeric_value):,.0f} vs Yesterday"
+                                color = 'negative'
+                            
+                            # Converter índice para letra de coluna para debug
+                            def col_index_to_letter(index):
+                                if index < 26:
+                                    return chr(65 + index)
+                                else:
+                                    first = (index - 26) // 26
+                                    second = (index - 26) % 26
+                                    return chr(65 + first) + chr(65 + second)
+                            
+                            col_letter = col_index_to_letter(col_index)
+                            print(f"✅ Variação encontrada na coluna {col_letter}: {numeric_value} → {text}")
+                            
+                            return {
+                                'variation': numeric_value,
+                                'text': text,
+                                'color': color
+                            }
+                    except ValueError:
+                        # Não conseguiu converter para número, continuar procurando
+                        continue
+                        
+            except Exception as e:
+                continue
+        
+        print("⚠️ Nenhuma variação numérica encontrada na linha 101")
+        return {'variation': 0, 'text': '+€0.0M vs Yesterday', 'color': 'positive'}
+        
+    except Exception as e:
+        print(f"❌ Erro ao ler variação: {e}")
+        return {'variation': 0, 'text': '+€0.0M vs Yesterday', 'color': 'positive'}
     """Get executive summary with your real values"""
     try:
         excel_file = "TREASURY DASHBOARD.xlsx"
@@ -627,15 +704,19 @@ def show_executive_overview():
     
     # Key metrics cards
     summary = get_executive_summary()
+    variation = get_latest_variation()  # Nova função para variação
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
+        # Determinar classe CSS para cor da variação
+        change_class = "change-positive" if variation['color'] == 'positive' else "change-negative"
+        
         st.markdown(f"""
         <div class="summary-card">
             <h3>Total Liquidity</h3>
             <div class="summary-value">€{summary['total_liquidity']:.1f}M</div>
-            <div class="summary-change change-positive">+€2.1M vs Yesterday</div>
+            <div class="summary-change {change_class}">{variation['text']}</div>
         </div>
         """, unsafe_allow_html=True)
     
