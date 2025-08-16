@@ -258,6 +258,122 @@ if 'current_page' not in st.session_state:
 
 # Data functions
 @st.cache_data(ttl=300)
+def get_daily_cash_flow():
+    """
+    Lê o Daily Cash Flow da linha 101 da aba 'Lista contas'
+    E a percentagem da linha 102
+    Procura da direita para esquerda o primeiro valor numérico
+    """
+    try:
+        excel_file = "TREASURY DASHBOARD.xlsx"
+        
+        if os.path.exists(excel_file):
+            file_path = excel_file
+        elif os.path.exists(f"data/{excel_file}"):
+            file_path = f"data/{excel_file}"
+        else:
+            return {
+                'cash_flow': 0,
+                'cash_flow_text': '€0',
+                'percentage': 0,
+                'percentage_text': '+0% vs Yesterday',
+                'percentage_color': 'positive'
+            }
+        
+        # Ler a aba "Lista contas"
+        lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
+        
+        print("🔍 Procurando Daily Cash Flow na linha 101 e % na linha 102...")
+        
+        # Verificar se linhas 101 e 102 existem
+        if lista_contas_sheet.shape[0] <= 101:
+            print("⚠️ Linhas 101/102 não existem")
+            return {
+                'cash_flow': 0,
+                'cash_flow_text': '€0',
+                'percentage': 0,
+                'percentage_text': '+0% vs Yesterday',
+                'percentage_color': 'positive'
+            }
+        
+        cash_flow_value = 0
+        percentage_value = 0
+        
+        # Procurar da direita para esquerda o primeiro valor numérico em ambas as linhas
+        for col_index in range(lista_contas_sheet.shape[1] - 1, -1, -1):
+            try:
+                # Linha 101 (índice 100) - Cash Flow
+                if cash_flow_value == 0:
+                    cell_value_101 = lista_contas_sheet.iloc[100, col_index]
+                    if pd.notna(cell_value_101):
+                        try:
+                            numeric_value_101 = float(cell_value_101)
+                            if numeric_value_101 != 0:
+                                cash_flow_value = numeric_value_101
+                                
+                # Linha 102 (índice 101) - Percentage
+                if percentage_value == 0:
+                    cell_value_102 = lista_contas_sheet.iloc[101, col_index]
+                    if pd.notna(cell_value_102):
+                        try:
+                            numeric_value_102 = float(cell_value_102)
+                            if numeric_value_102 != 0:
+                                percentage_value = numeric_value_102
+                        except ValueError:
+                            continue
+                
+                # Se encontrou ambos, parar
+                if cash_flow_value != 0 and percentage_value != 0:
+                    break
+                    
+            except ValueError:
+                continue
+            except Exception as e:
+                continue
+        
+        # Formatar Cash Flow (valor exato sem conversão)
+        if cash_flow_value != 0:
+            if cash_flow_value >= 0:
+                cash_flow_text = f"€{cash_flow_value:,.0f}"
+            else:
+                cash_flow_text = f"-€{abs(cash_flow_value):,.0f}"
+        else:
+            cash_flow_text = "€0"
+        
+        # Formatar Percentage
+        if percentage_value != 0:
+            if percentage_value >= 0:
+                percentage_text = f"+{percentage_value:.1f}% vs Yesterday"
+                percentage_color = 'positive'
+            else:
+                percentage_text = f"{percentage_value:.1f}% vs Yesterday"
+                percentage_color = 'negative'
+        else:
+            percentage_text = "+0% vs Yesterday"
+            percentage_color = 'positive'
+        
+        print(f"✅ Daily Cash Flow encontrado: {cash_flow_value} → {cash_flow_text}")
+        print(f"✅ Percentage encontrada: {percentage_value} → {percentage_text}")
+        
+        return {
+            'cash_flow': cash_flow_value,
+            'cash_flow_text': cash_flow_text,
+            'percentage': percentage_value,
+            'percentage_text': percentage_text,
+            'percentage_color': percentage_color
+        }
+        
+    except Exception as e:
+        print(f"❌ Erro ao ler Daily Cash Flow: {e}")
+        return {
+            'cash_flow': 0,
+            'cash_flow_text': '€0',
+            'percentage': 0,
+            'percentage_text': '+0% vs Yesterday',
+            'percentage_color': 'positive'
+        }
+
+@st.cache_data(ttl=300)
 def get_executive_summary():
     """Get executive summary with your real values"""
     try:
@@ -755,6 +871,7 @@ def show_executive_overview():
     # Key metrics cards
     summary = get_executive_summary()
     variation = get_latest_variation()  # Nova função para variação
+    cash_flow = get_daily_cash_flow()   # Nova função para Daily Cash Flow
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -773,27 +890,30 @@ def show_executive_overview():
     with col2:
         st.markdown(f"""
         <div class="summary-card">
-            <h3>Bank Accounts</h3>
-            <div class="summary-value">{summary['bank_accounts']}</div>
-            <div class="summary-change change-positive">Active Accounts</div>
+            <h3>Inflow</h3>
+            <div class="summary-value">€0</div>
+            <div class="summary-change change-positive">To be configured</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown(f"""
         <div class="summary-card">
-            <h3>Active Banks</h3>
-            <div class="summary-value">{summary['active_banks']}</div>
-            <div class="summary-change change-positive">Relationships</div>
+            <h3>Outflow</h3>
+            <div class="summary-value">€0</div>
+            <div class="summary-change change-positive">To be configured</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col4:
+        # Determinar classe CSS para cor da percentagem
+        percentage_class = "change-positive" if cash_flow['percentage_color'] == 'positive' else "change-negative"
+        
         st.markdown(f"""
         <div class="summary-card">
             <h3>Daily Cash Flow</h3>
-            <div class="summary-value">€3.4M</div>
-            <div class="summary-change change-positive">+€1.2M Inflow Today</div>
+            <div class="summary-value">{cash_flow['cash_flow_text']}</div>
+            <div class="summary-change {percentage_class}">{cash_flow['percentage_text']}</div>
         </div>
         """, unsafe_allow_html=True)
     
