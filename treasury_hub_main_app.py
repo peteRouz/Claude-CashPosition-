@@ -299,35 +299,28 @@ def get_daily_cash_flow():
         cash_flow_value = 0
         percentage_value = 0
         
-        # Procurar da direita para esquerda o primeiro valor numérico em ambas as linhas
-        for col_index in range(lista_contas_sheet.shape[1] - 1, -1, -1):
+        # Procurar da ESQUERDA para DIREITA para encontrar o valor MAIS RECENTE
+        for col_index in range(lista_contas_sheet.shape[1]):
             try:
                 # Linha 101 (índice 100) - Cash Flow
-                if cash_flow_value == 0:
-                    cell_value_101 = lista_contas_sheet.iloc[100, col_index]
-                    if pd.notna(cell_value_101):
-                        try:
-                            numeric_value_101 = float(cell_value_101)
-                            if numeric_value_101 != 0:
-                                cash_flow_value = numeric_value_101
-                        except ValueError:
-                            pass
+                cell_value_101 = lista_contas_sheet.iloc[100, col_index]
+                if pd.notna(cell_value_101):
+                    try:
+                        numeric_value_101 = float(cell_value_101)
+                        if numeric_value_101 != 0:
+                            cash_flow_value = numeric_value_101  # Sempre substitui pelo mais recente
+                    except ValueError:
+                        pass
                 
                 # Linha 102 (índice 101) - Percentage
-                if percentage_value == 0:
-                    cell_value_102 = lista_contas_sheet.iloc[101, col_index]
-                    if pd.notna(cell_value_102):
-                        try:
-                            numeric_value_102 = float(cell_value_102)
-                            # Aceitar qualquer valor numérico, incluindo 0
-                            percentage_value = numeric_value_102
-                            break  # Parar logo que encontrar o primeiro valor
-                        except ValueError:
-                            pass
-                
-                # Se encontrou ambos, parar
-                if cash_flow_value != 0 and percentage_value != 0:
-                    break
+                cell_value_102 = lista_contas_sheet.iloc[101, col_index]
+                if pd.notna(cell_value_102):
+                    try:
+                        numeric_value_102 = float(cell_value_102)
+                        # Aceitar qualquer valor numérico, sempre substitui pelo mais recente
+                        percentage_value = numeric_value_102
+                    except ValueError:
+                        pass
                     
             except Exception as e:
                 continue
