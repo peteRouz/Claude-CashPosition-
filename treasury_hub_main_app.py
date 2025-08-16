@@ -262,7 +262,7 @@ def get_daily_cash_flow():
     """
     Lê o Daily Cash Flow da linha 101 da aba 'Lista contas'
     E a percentagem da linha 102
-    Procura da direita para esquerda o primeiro valor numérico
+    Procura da esquerda para direita o primeiro valor numérico
     """
     try:
         excel_file = "TREASURY DASHBOARD.xlsx"
@@ -299,7 +299,7 @@ def get_daily_cash_flow():
         cash_flow_value = 0
         percentage_value = 0
         
-        # Procurar da ESQUERDA para DIREITA para encontrar o valor MAIS RECENTE
+        # Procurar da esquerda para direita o primeiro valor numérico em ambas as linhas
         for col_index in range(lista_contas_sheet.shape[1]):
             try:
                 # Linha 101 (índice 100) - Cash Flow
