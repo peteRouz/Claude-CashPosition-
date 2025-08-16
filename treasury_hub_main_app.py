@@ -992,8 +992,8 @@ def show_executive_overview():
             )
             
             st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No approved FX deals to display. Submit and approve some deals to see the activity chart.")
+            else:
+                st.info("No approved FX deals to display. Submit and approve some deals to see the activity chart.")
             
             # Mostrar info sobre fonte de dados
             if 'columns_found' in liquidity_data:
