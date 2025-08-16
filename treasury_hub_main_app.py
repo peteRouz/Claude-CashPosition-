@@ -372,6 +372,16 @@ def get_daily_cash_flow():
             'percentage_text': '+0% vs Yesterday',
             'percentage_color': 'positive'
         }
+        
+    except Exception as e:
+        print(f"❌ Erro ao ler Daily Cash Flow: {e}")
+        return {
+            'cash_flow': 0,
+            'cash_flow_text': '€0',
+            'percentage': 0,
+            'percentage_text': '+0% vs Yesterday',
+            'percentage_color': 'positive'
+        }
 
 @st.cache_data(ttl=300)
 def get_executive_summary():
