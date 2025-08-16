@@ -1428,7 +1428,7 @@ def show_fx_risk():
                 font=dict(family='Inter, sans-serif')
             )
             
-            st.plotly_chart(fig, use_container_width=True)],
+            st.plotly_chart(fig, use_container_width=True),
                     textposition='auto',
                 )
             ])
