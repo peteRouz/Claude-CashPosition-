@@ -310,7 +310,9 @@ def get_daily_cash_flow():
                             numeric_value_101 = float(cell_value_101)
                             if numeric_value_101 != 0:
                                 cash_flow_value = numeric_value_101
-                                
+                        except ValueError:
+                            pass
+                
                 # Linha 102 (índice 101) - Percentage
                 if percentage_value == 0:
                     cell_value_102 = lista_contas_sheet.iloc[101, col_index]
@@ -320,14 +322,12 @@ def get_daily_cash_flow():
                             if numeric_value_102 != 0:
                                 percentage_value = numeric_value_102
                         except ValueError:
-                            continue
+                            pass
                 
                 # Se encontrou ambos, parar
                 if cash_flow_value != 0 and percentage_value != 0:
                     break
                     
-            except ValueError:
-                continue
             except Exception as e:
                 continue
         
