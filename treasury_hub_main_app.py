@@ -437,7 +437,7 @@ def get_executive_summary():
 def get_latest_variation():
     """
     Lê a variação mais recente da linha 101 da aba 'Lista contas'
-    Procura da direita para esquerda o primeiro valor numérico
+    Procura da esquerda para direita o primeiro valor numérico
     """
     try:
         excel_file = "TREASURY DASHBOARD.xlsx"
@@ -459,8 +459,8 @@ def get_latest_variation():
             print("⚠️ Linha 101 não existe")
             return {'variation': 0, 'text': '+€0 vs Yesterday', 'color': 'positive'}
         
-        # Procurar da direita para esquerda o primeiro valor numérico
-        for col_index in range(lista_contas_sheet.shape[1] - 1, -1, -1):
+        # Procurar da esquerda para direita o primeiro valor numérico
+        for col_index in range(lista_contas_sheet.shape[1]):
             try:
                 cell_value = lista_contas_sheet.iloc[100, col_index]  # Linha 101 = índice 100
                 
