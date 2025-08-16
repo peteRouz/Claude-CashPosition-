@@ -271,7 +271,7 @@ def get_latest_variation():
         elif os.path.exists(f"data/{excel_file}"):
             file_path = f"data/{excel_file}"
         else:
-            return {'variation': 0, 'text': '+€0.0M vs Yesterday', 'color': 'positive'}
+            return {'variation': 0, 'text': '+€0 vs Yesterday', 'color': 'positive'}
         
         # Ler a aba "Lista contas"
         lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
@@ -281,7 +281,7 @@ def get_latest_variation():
         # Verificar se linha 101 existe (índice 100)
         if lista_contas_sheet.shape[0] <= 100:
             print("⚠️ Linha 101 não existe")
-            return {'variation': 0, 'text': '+€0.0M vs Yesterday', 'color': 'positive'}
+            return {'variation': 0, 'text': '+€0 vs Yesterday', 'color': 'positive'}
         
         # Procurar da direita para esquerda o primeiro valor numérico
         for col_index in range(lista_contas_sheet.shape[1] - 1, -1, -1):
@@ -331,11 +331,11 @@ def get_latest_variation():
                 continue
         
         print("⚠️ Nenhuma variação numérica encontrada na linha 101")
-        return {'variation': 0, 'text': '+€0.0M vs Yesterday', 'color': 'positive'}
+        return {'variation': 0, 'text': '+€0 vs Yesterday', 'color': 'positive'}
         
     except Exception as e:
         print(f"❌ Erro ao ler variação: {e}")
-        return {'variation': 0, 'text': '+€0.0M vs Yesterday', 'color': 'positive'}
+        return {'variation': 0, 'text': '+€0 vs Yesterday', 'color': 'positive'}
     """Get executive summary with your real values"""
     try:
         excel_file = "TREASURY DASHBOARD.xlsx"
