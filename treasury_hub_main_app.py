@@ -1648,8 +1648,8 @@ def main():
     create_navigation()
     
     # Route to pages
-    # DEBUG: Show current page state
-    st.sidebar.write(f"🔍 Current page: {st.session_state.current_page}")
+    # DEBUG: Show current page state more prominently
+    st.write(f"🔍 **CURRENT PAGE STATE: {st.session_state.current_page}**")
     
     if st.session_state.current_page == 'homepage':
         show_homepage()
@@ -1662,6 +1662,7 @@ def main():
     elif st.session_state.current_page == 'investments':
         show_investment_portfolio()
     else:
+        st.error(f"Unknown page: {st.session_state.current_page}")
         show_homepage()
 
 if __name__ == "__main__":
