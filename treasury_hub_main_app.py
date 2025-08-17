@@ -1232,43 +1232,7 @@ def show_daily_operations():
     
     st.markdown("</div></div>", unsafe_allow_html=True)
 
-def show_placeholder_page(title, description):
-    """Show placeholder for other pages"""
-    if st.button("🏠 Back to Home", key=f"back_home_{title.lower().replace(' ', '_')}"):
-        st.session_state.current_page = 'overview'
-        st.rerun()
-    
-    st.markdown(f"""
-    <div class="dashboard-section">
-        <div class="section-header">{title}</div>
-        <div class="section-content">
-            <div style="text-align: center; padding: 3rem;">
-                <h3>🚧 {title}</h3>
-                <p>{description}</p>
-                <p><em>This module will be available in the next update.</em></p>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Main application
-def main():
-    """Main application with professional interface"""
-    
-    # Create professional header
-    create_professional_header()
-    
-    # Navigation
-    create_navigation()
-    
-    # Route to pages
-    if st.session_state.current_page == 'overview':
-        show_executive_overview()
-    elif st.session_state.current_page == 'fx_risk':
-        show_fx_risk()
-    elif st.session_state.current_page == 'operations':
-        show_daily_operations()
-    def show_investment_portfolio():
+def show_investment_portfolio():
     """Show Investment Portfolio dashboard with tracking functionality"""
     if st.button("🏠 Back to Home", key="back_home_investments"):
         st.session_state.current_page = 'overview'
@@ -1617,7 +1581,46 @@ def main():
                 if transaction.get('notes'):
                     st.caption(f"📝 {transaction['notes']}")
                 
-                st.markdown("---")elif st.session_state.current_page == 'investments':
+                st.markdown("---")
+
+def show_placeholder_page(title, description):
+    """Show placeholder for other pages"""
+    if st.button("🏠 Back to Home", key=f"back_home_{title.lower().replace(' ', '_')}"):
+        st.session_state.current_page = 'overview'
+        st.rerun()
+    
+    st.markdown(f"""
+    <div class="dashboard-section">
+        <div class="section-header">{title}</div>
+        <div class="section-content">
+            <div style="text-align: center; padding: 3rem;">
+                <h3>🚧 {title}</h3>
+                <p>{description}</p>
+                <p><em>This module will be available in the next update.</em></p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Main application
+def main():
+    """Main application with professional interface"""
+    
+    # Create professional header
+    create_professional_header()
+    
+    # Navigation
+    create_navigation()
+    
+    # Route to pages
+    if st.session_state.current_page == 'overview':
+        show_executive_overview()
+    elif st.session_state.current_page == 'fx_risk':
+        show_fx_risk()
+    elif st.session_state.current_page == 'operations':
+        show_daily_operations()
+    elif st.session_state.current_page == 'investments':
+        show_investment_portfolio()
     else:
         show_executive_overview()
 
