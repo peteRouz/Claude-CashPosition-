@@ -204,7 +204,7 @@ st.markdown("""
 
 # Session state
 if 'current_page' not in st.session_state:
-    st.session_state.current_page = 'homepage'
+    st.session_state.current_page = 'overview'
 
 # Data functions with SAFE number handling
 @st.cache_data(ttl=300)
@@ -861,7 +861,7 @@ def show_executive_overview():
 def show_fx_risk():
     """Show FX Risk Management dashboard"""
     if st.button("🏠 Back to Home", key="back_home_fx"):
-        st.session_state.current_page = 'homepage'
+        st.session_state.current_page = 'overview'
         st.rerun()
     
     st.markdown('<div class="section-header">FX Risk Management</div>', unsafe_allow_html=True)
@@ -994,7 +994,7 @@ def show_fx_risk():
 def show_daily_operations():
     """Show Daily Operations dashboard"""
     if st.button("🏠 Back to Home", key="back_home_operations"):
-        st.session_state.current_page = 'homepage'
+        st.session_state.current_page = 'overview'
         st.rerun()
     
     st.markdown('<div class="section-header">Daily Operations Center</div>', unsafe_allow_html=True)
@@ -1270,7 +1270,7 @@ def show_daily_operations():
 def show_investment_portfolio():
     """Show Investment Portfolio dashboard with tracking functionality"""
     if st.button("🏠 Back to Home", key="back_home_investments"):
-        st.session_state.current_page = 'homepage'
+        st.session_state.current_page = 'overview'
         st.rerun()
     
     st.markdown('<div class="section-header">Investment Portfolio Tracking</div>', unsafe_allow_html=True)
@@ -1621,7 +1621,7 @@ def show_investment_portfolio():
 def show_placeholder_page(title, description):
     """Show placeholder for other pages"""
     if st.button("🏠 Back to Home", key=f"back_home_{title.lower().replace(' ', '_')}"):
-        st.session_state.current_page = 'homepage'
+        st.session_state.current_page = 'overview'
         st.rerun()
     
     st.markdown(f"""
@@ -1651,7 +1651,7 @@ def main():
     # DEBUG: Show current page state more prominently
     st.write(f"🔍 **CURRENT PAGE STATE: {st.session_state.current_page}**")
     
-    if st.session_state.current_page == 'homepage':
+    if st.session_state.current_page == 'overview':
         show_homepage()
     elif st.session_state.current_page == 'executive':
         show_executive_overview()
