@@ -1537,7 +1537,7 @@ def main():
         show_fx_risk()
     elif st.session_state.current_page == 'operations':
         show_daily_operations()
-        def show_daily_operations():
+            def show_daily_operations():
     """Show Daily Operations dashboard with all requested functionality"""
     if st.button("🏠 Back to Home", key="back_home_operations"):
         st.session_state.current_page = 'overview'
