@@ -1536,7 +1536,292 @@ def main():
     elif st.session_state.current_page == 'fx_risk':
         show_fx_risk()
     elif st.session_state.current_page == 'operations':
-        show_placeholder_page("Daily Operations", "Real-time treasury operations and transaction management.")
+        show_daily_operations()
+        def show_daily_operations():
+    """Show Daily Operations dashboard with all requested functionality"""
+    if st.button("🏠 Back to Home", key="back_home_operations"):
+        st.session_state.current_page = 'overview'
+        st.rerun()
+    
+    st.markdown('<div class="section-header">Daily Operations Center</div>', unsafe_allow_html=True)
+    
+    # Initialize session states
+    if 'operational_workflows' not in st.session_state:
+        st.session_state.operational_workflows = []
+    if 'intraday_transfers' not in st.session_state:
+        st.session_state.intraday_transfers = []
+    if 'pcard_requests' not in st.session_state:
+        st.session_state.pcard_requests = []
+    
+    # TOP ROW: Operational Workflows + Intraday Transfers
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">📋 Operational Workflows</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Workflow Form
+        with st.form("workflow_form", clear_on_submit=True):
+            subject = st.text_input("Subject", placeholder="Enter task subject...")
+            workflow_date = st.date_input("Date", value=datetime.now().date())
+            notes = st.text_area("Notes", placeholder="Additional details and notes...", height=80)
+            
+            submitted = st.form_submit_button("➕ Add Workflow", use_container_width=True)
+            
+            if submitted and subject.strip():
+                new_workflow = {
+                    'id': len(st.session_state.operational_workflows) + 1,
+                    'subject': subject.strip(),
+                    'date': workflow_date.strftime("%Y-%m-%d"),
+                    'notes': notes.strip(),
+                    'status': 'Pending',
+                    'created': datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.operational_workflows.append(new_workflow)
+                st.success("Workflow added successfully!")
+                st.rerun()
+        
+        # Display Workflows with hover tooltips
+        if st.session_state.operational_workflows:
+            st.markdown("**Active Workflows:**")
+            
+            for workflow in st.session_state.operational_workflows:
+                # Create unique key for each workflow
+                col_a, col_b, col_c = st.columns([3, 1, 1])
+                
+                with col_a:
+                    # Create tooltip effect using title attribute
+                    tooltip_text = f"Notes: {workflow['notes']}\nCreated: {workflow['created']}"
+                    status_color = "🟡" if workflow['status'] == 'Pending' else "🟢"
+                    
+                    st.markdown(f"""
+                    <div style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid {'#ffc107' if workflow['status'] == 'Pending' else '#28a745'};" title="{tooltip_text}">
+                        <strong>{workflow['subject']}</strong><br>
+                        <small style="color: #6c757d;">{workflow['date']}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col_b:
+                    st.write(f"**{workflow['status']}**")
+                
+                with col_c:
+                    if workflow['status'] == 'Pending':
+                        if st.button("✅", key=f"complete_{workflow['id']}", help="Mark as Concluded"):
+                            for w in st.session_state.operational_workflows:
+                                if w['id'] == workflow['id']:
+                                    w['status'] = 'Concluded'
+                            st.rerun()
+                    else:
+                        if st.button("🔄", key=f"reopen_{workflow['id']}", help="Mark as Pending"):
+                            for w in st.session_state.operational_workflows:
+                                if w['id'] == workflow['id']:
+                                    w['status'] = 'Pending'
+                            st.rerun()
+        else:
+            st.info("No workflows created yet.")
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">💸 Intraday Transfers</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Company list for dropdowns (you can customize this)
+        companies = [
+            "Holding Company Ltd",
+            "Operations Co",
+            "European Subsidiary",
+            "North America Inc", 
+            "Asia Pacific Ltd",
+            "Treasury Center",
+            "Investment Vehicle",
+            "Trading Entity",
+            "Service Company",
+            "Technology Division"
+        ]
+        
+        # Transfer Form
+        with st.form("transfer_form", clear_on_submit=True):
+            from_company = st.selectbox("From", companies, key="from_comp")
+            to_company = st.selectbox("To", companies, key="to_comp")
+            transfer_date = st.date_input("Date", value=datetime.now().date(), key="transfer_date")
+            amount = st.number_input("Amount (EUR)", min_value=1000, value=100000, step=1000, key="transfer_amount")
+            
+            transfer_submitted = st.form_submit_button("💾 Save Transfer", use_container_width=True)
+            
+            if transfer_submitted:
+                if from_company != to_company:
+                    new_transfer = {
+                        'id': len(st.session_state.intraday_transfers) + 1,
+                        'from_company': from_company,
+                        'to_company': to_company,
+                        'date': transfer_date.strftime("%Y-%m-%d"),
+                        'amount': amount,
+                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
+                    }
+                    st.session_state.intraday_transfers.append(new_transfer)
+                    st.success("Transfer saved successfully!")
+                    st.rerun()
+                else:
+                    st.error("From and To companies must be different!")
+        
+        # Display Transfers
+        if st.session_state.intraday_transfers:
+            st.markdown("**Recent Transfers:**")
+            
+            # Show last 5 transfers
+            recent_transfers = st.session_state.intraday_transfers[-5:]
+            for transfer in reversed(recent_transfers):
+                st.markdown(f"""
+                <div style="background: #e8f4fd; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid #007bff;">
+                    <strong>{transfer['from_company']} → {transfer['to_company']}</strong><br>
+                    <small>€{transfer['amount']:,} • {transfer['date']}</small>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No transfers recorded yet.")
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # MIDDLE ROW: Cashflow vs Actuals Chart
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">📊 Cashflow vs Actuals</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    # Placeholder for your chart code
+    st.info("📌 Chart placeholder - You can paste your Python chart code here!")
+    
+    # Sample chart structure (you can replace this with your code)
+    sample_data = {
+        'Categories': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        'Forecast': [2.5, 3.2, 2.8, 4.1],
+        'Actual': [2.8, 2.9, 3.1, 3.8]
+    }
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        name='Forecast',
+        x=sample_data['Categories'],
+        y=sample_data['Forecast'],
+        marker_color='lightblue'
+    ))
+    fig.add_trace(go.Bar(
+        name='Actual',
+        x=sample_data['Categories'],
+        y=sample_data['Actual'],
+        marker_color='darkblue'
+    ))
+    
+    fig.update_layout(
+        height=250,
+        margin=dict(l=0, r=0, t=20, b=0),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        barmode='group',
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        yaxis=dict(title='Million EUR')
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    st.caption("💡 Replace this with your cashflow chart code")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # BOTTOM ROW: P-Card Requests
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">💳 P-Card Requests</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.markdown("**Manual Entry** (Future: AI Agent)")
+        
+        # Manual form for now
+        with st.form("pcard_form", clear_on_submit=True):
+            requester_name = st.text_input("Requester Name", placeholder="John Doe")
+            requested_amount = st.number_input("Amount Requested (EUR)", min_value=1, value=500, step=50)
+            request_reason = st.text_area("Reason", placeholder="Business purpose...", height=60)
+            
+            pcard_submitted = st.form_submit_button("📨 Add Request", use_container_width=True)
+            
+            if pcard_submitted and requester_name.strip():
+                new_request = {
+                    'id': len(st.session_state.pcard_requests) + 1,
+                    'requester': requester_name.strip(),
+                    'amount': requested_amount,
+                    'reason': request_reason.strip(),
+                    'status': 'Pending',
+                    'card_number': '',
+                    'request_date': datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.pcard_requests.append(new_request)
+                st.success("P-Card request added!")
+                st.rerun()
+    
+    with col2:
+        st.markdown("**Pending Requests**")
+        
+        if st.session_state.pcard_requests:
+            for request in st.session_state.pcard_requests:
+                if request['status'] == 'Pending':
+                    col_a, col_b, col_c = st.columns([2, 1, 1])
+                    
+                    with col_a:
+                        st.markdown(f"""
+                        <div style="background: #fff3cd; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid #ffc107;">
+                            <strong>{request['requester']}</strong><br>
+                            <small>€{request['amount']} • {request['reason'][:30]}{'...' if len(request['reason']) > 30 else ''}</small><br>
+                            <small style="color: #6c757d;">{request['request_date']}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with col_b:
+                        card_number = st.text_input("Card #", key=f"card_{request['id']}", placeholder="1234-5678")
+                    
+                    with col_c:
+                        if st.button("✅ Send", key=f"approve_card_{request['id']}"):
+                            if card_number.strip():
+                                for r in st.session_state.pcard_requests:
+                                    if r['id'] == request['id']:
+                                        r['status'] = 'Approved'
+                                        r['card_number'] = card_number.strip()
+                                st.success(f"Card number sent to {request['requester']}!")
+                                st.rerun()
+                            else:
+                                st.error("Please enter card number!")
+                
+                elif request['status'] == 'Approved':
+                    st.markdown(f"""
+                    <div style="background: #d4edda; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid #28a745;">
+                        <strong>✅ {request['requester']}</strong> - Card #{request['card_number']} sent<br>
+                        <small>€{request['amount']} • {request['request_date']}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.info("No P-Card requests yet.")
+        
+        # Future AI Agent info
+        st.markdown("""
+        <div style="background: #e2e3e5; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+            <strong>🤖 Future Enhancement:</strong><br>
+            <small>AI Agent will automatically read emails and populate requests here. 
+            Integration with email parsing for automatic requester detection and amount extraction.</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
     elif st.session_state.current_page == 'investments':
         show_placeholder_page("Investment Portfolio", "Portfolio management and investment performance tracking.")
     else:
