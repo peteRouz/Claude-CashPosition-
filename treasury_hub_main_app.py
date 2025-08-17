@@ -681,12 +681,18 @@ def show_homepage():
 
 def show_executive_overview():
     """Show executive overview with SAFE formatting"""
+    print("🔍 Debug: Entrando em show_executive_overview()")  # Debug line
+    
     st.markdown('<div class="section-header">Executive Summary</div>', unsafe_allow_html=True)
     
     # Get data safely
     summary = get_executive_summary()
     variation = get_latest_variation()
     cash_flow = get_daily_cash_flow()
+    
+    print(f"🔍 Debug: Summary = {summary}")  # Debug line
+    print(f"🔍 Debug: Variation = {variation}")  # Debug line
+    print(f"🔍 Debug: Cash flow = {cash_flow}")  # Debug line
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -729,6 +735,8 @@ def show_executive_overview():
             <div class="summary-change {percentage_class}">{cash_flow['percentage_text']}</div>
         </div>
         """, unsafe_allow_html=True)
+    
+    print("🔍 Debug: Cards criados com sucesso")  # Debug line
     
     # Charts section
     col1, col2 = st.columns([2, 1])
@@ -799,6 +807,7 @@ def show_executive_overview():
             
         except Exception as e:
             st.error(f"Error loading chart: {e}")
+            print(f"🔍 Debug: Erro no gráfico = {e}")  # Debug line
             # Fallback chart
             dates = pd.date_range(start=datetime.now() - timedelta(days=7), periods=7, freq='D')
             values = [28.5, 30.2, 31.8, 29.4, 32.1, 31.7, 32.6]
@@ -853,6 +862,8 @@ def show_executive_overview():
         </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    print("🔍 Debug: show_executive_overview() concluído com sucesso")  # Debug line
 
 def show_fx_risk():
     """Show FX Risk Management dashboard"""
@@ -1644,6 +1655,8 @@ def main():
     create_navigation()
     
     # Route to pages
+    print(f"🔍 Debug: Página atual = '{st.session_state.current_page}'")  # Debug line
+    
     if st.session_state.current_page == 'homepage':
         show_homepage()
     elif st.session_state.current_page == 'executive':
@@ -1655,6 +1668,7 @@ def main():
     elif st.session_state.current_page == 'investments':
         show_investment_portfolio()
     else:
+        print(f"🔍 Debug: Página não reconhecida '{st.session_state.current_page}', redirecionando para homepage")
         show_homepage()
 
 if __name__ == "__main__":
