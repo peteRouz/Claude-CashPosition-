@@ -204,7 +204,7 @@ st.markdown("""
 
 # Session state
 if 'current_page' not in st.session_state:
-    st.session_state.current_page = 'overview'
+    st.session_state.current_page = 'homepage'
 
 # Data functions with SAFE number handling
 @st.cache_data(ttl=300)
@@ -648,6 +648,37 @@ def create_navigation():
                 st.session_state.current_page = page_key
                 st.rerun()
 
+def show_homepage():
+    """Show homepage with just header and navigation - content area for future development"""
+    st.markdown('<div class="section-header">Treasury Operations Center - Homepage</div>', unsafe_allow_html=True)
+    
+    # Future homepage content area
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-content">
+            <div style="text-align: center; padding: 4rem 2rem;">
+                <h2 style="color: #2d3748; margin-bottom: 1rem;">Welcome to Treasury Operations Center</h2>
+                <p style="color: #718096; font-size: 1.1rem; margin-bottom: 2rem;">
+                    Your comprehensive financial command and control center
+                </p>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 12px; margin: 2rem auto; max-width: 600px;">
+                    <h3 style="margin-bottom: 1rem;">Quick Access</h3>
+                    <p style="margin-bottom: 1.5rem; opacity: 0.9;">Navigate to your treasury modules using the buttons above</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+                        <div>📊 Executive Overview</div>
+                        <div>💱 FX Risk Management</div>
+                        <div>📈 Investment Portfolio</div>
+                        <div>⚙️ Daily Operations</div>
+                    </div>
+                </div>
+                <p style="color: #a0aec0; font-size: 0.9rem; margin-top: 2rem;">
+                    <em>Homepage content area - Ready for future customization</em>
+                </p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
 def show_executive_overview():
     """Show executive overview with SAFE formatting"""
     st.markdown('<div class="section-header">Executive Summary</div>', unsafe_allow_html=True)
@@ -826,7 +857,7 @@ def show_executive_overview():
 def show_fx_risk():
     """Show FX Risk Management dashboard"""
     if st.button("🏠 Back to Home", key="back_home_fx"):
-        st.session_state.current_page = 'overview'
+        st.session_state.current_page = 'homepage'
         st.rerun()
     
     st.markdown('<div class="section-header">FX Risk Management</div>', unsafe_allow_html=True)
@@ -959,7 +990,7 @@ def show_fx_risk():
 def show_daily_operations():
     """Show Daily Operations dashboard"""
     if st.button("🏠 Back to Home", key="back_home_operations"):
-        st.session_state.current_page = 'overview'
+        st.session_state.current_page = 'homepage'
         st.rerun()
     
     st.markdown('<div class="section-header">Daily Operations Center</div>', unsafe_allow_html=True)
@@ -1235,7 +1266,7 @@ def show_daily_operations():
 def show_investment_portfolio():
     """Show Investment Portfolio dashboard with tracking functionality"""
     if st.button("🏠 Back to Home", key="back_home_investments"):
-        st.session_state.current_page = 'overview'
+        st.session_state.current_page = 'homepage'
         st.rerun()
     
     st.markdown('<div class="section-header">Investment Portfolio Tracking</div>', unsafe_allow_html=True)
@@ -1586,7 +1617,7 @@ def show_investment_portfolio():
 def show_placeholder_page(title, description):
     """Show placeholder for other pages"""
     if st.button("🏠 Back to Home", key=f"back_home_{title.lower().replace(' ', '_')}"):
-        st.session_state.current_page = 'overview'
+        st.session_state.current_page = 'homepage'
         st.rerun()
     
     st.markdown(f"""
@@ -1613,7 +1644,9 @@ def main():
     create_navigation()
     
     # Route to pages
-    if st.session_state.current_page == 'overview':
+    if st.session_state.current_page == 'homepage':
+        show_homepage()
+    elif st.session_state.current_page == 'executive':
         show_executive_overview()
     elif st.session_state.current_page == 'fx_risk':
         show_fx_risk()
@@ -1622,7 +1655,7 @@ def main():
     elif st.session_state.current_page == 'investments':
         show_investment_portfolio()
     else:
-        show_executive_overview()
+        show_homepage()
 
 if __name__ == "__main__":
     main()
