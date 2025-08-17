@@ -650,6 +650,8 @@ def create_navigation():
 
 def show_homepage():
     """Show homepage with just header and navigation - content area for future development"""
+    # Add visual indicator to confirm we're in the right function
+    st.warning("⚠️ DEBUG: You are currently on the Homepage!")
     st.markdown('<div class="section-header">Treasury Operations Center - Homepage</div>', unsafe_allow_html=True)
     
     # Future homepage content area
@@ -681,6 +683,8 @@ def show_homepage():
 
 def show_executive_overview():
     """Show executive overview with SAFE formatting"""
+    # Add visual indicator to confirm we're in the right function
+    st.success("✅ DEBUG: You are now in Executive Overview!")
     st.markdown('<div class="section-header">Executive Summary</div>', unsafe_allow_html=True)
     
     # Get data safely
@@ -1644,6 +1648,9 @@ def main():
     create_navigation()
     
     # Route to pages
+    # DEBUG: Show current page state
+    st.sidebar.write(f"🔍 Current page: {st.session_state.current_page}")
+    
     if st.session_state.current_page == 'homepage':
         show_homepage()
     elif st.session_state.current_page == 'executive':
