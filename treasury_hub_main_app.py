@@ -502,53 +502,6 @@ def get_latest_variation():
     except Exception as e:
         print(f"❌ Erro ao ler variação: {e}")
         return {'variation': 0, 'text': '+€0 vs Yesterday', 'color': 'positive'}
-    """Get executive summary with your real values"""
-    try:
-        excel_file = "TREASURY DASHBOARD.xlsx"
-        
-        if os.path.exists(excel_file):
-            file_path = excel_file
-        elif os.path.exists(f"data/{excel_file}"):
-            file_path = f"data/{excel_file}"
-        else:
-            # Use your known values as fallback
-            return {
-                'total_liquidity': 32.6,
-                'bank_accounts': 96,
-                'active_banks': 13,
-                'last_updated': datetime.now().strftime("%H:%M")
-            }
-        
-        # Try to read real data
-        try:
-            tabelas_sheet = pd.read_excel(file_path, sheet_name="Tabelas", header=None)
-            total_liquidity_raw = tabelas_sheet.iloc[91, 2]
-            total_liquidity = float(total_liquidity_raw) / 1_000_000 if pd.notna(total_liquidity_raw) else 32.6
-            
-            lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
-            account_rows = lista_contas_sheet.iloc[2:98]
-            bank_accounts = len(account_rows.dropna(how='all'))
-            
-            return {
-                'total_liquidity': total_liquidity,
-                'bank_accounts': bank_accounts,
-                'active_banks': 13,
-                'last_updated': datetime.now().strftime("%H:%M")
-            }
-        except:
-            return {
-                'total_liquidity': 32.6,
-                'bank_accounts': 96,
-                'active_banks': 13,
-                'last_updated': datetime.now().strftime("%H:%M")
-            }
-    except:
-        return {
-            'total_liquidity': 32.6,
-            'bank_accounts': 96,
-            'active_banks': 13,
-            'last_updated': datetime.now().strftime("%H:%M")
-        }
 
 @st.cache_data(ttl=300)
 def get_dynamic_liquidity_data():
@@ -1132,537 +1085,6 @@ def show_fx_risk():
                 if sell_currency != buy_currency:
                     new_deal = {
                         'id': len(st.session_state.fx_deals) + 1,
-                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                        'sell_currency': sell_currency,
-                        'buy_currency': buy_currency,
-                        'amount': amount,
-                        'contract_type': contract_type,
-                        'value_date': value_date.strftime("%Y-%m-%d"),
-                        'comments': comments,
-                        'status': 'Pending',
-                        'user': 'Treasury User'  # Future: get from login
-                    }
-                    st.session_state.fx_deals.append(new_deal)
-                    st.success("FX Deal submitted successfully!")
-                    st.rerun()
-                else:
-                    st.error("Sell and Buy currencies must be different!")
-        
-        st.markdown("</div></div>", unsafe_allow_html=True)
-    
-    # Pending FX Deals Section
-    if st.session_state.fx_deals:
-        st.markdown("""
-        <div class="dashboard-section">
-            <div class="section-header">Pending FX Deals</div>
-            <div class="section-content">
-        """, unsafe_allow_html=True)
-        
-        # Display deals in a table format
-        for deal in st.session_state.fx_deals:
-            if deal['status'] == 'Pending':
-                col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
-                
-                with col1:
-                    st.write(f"**{deal['sell_currency']}/{deal['buy_currency']}**")
-                    st.write(f"Amount: {deal['amount']:,}")
-                
-                with col2:
-                    st.write(f"Type: {deal['contract_type']}")
-                    st.write(f"Value Date: {deal['value_date']}")
-                
-                with col3:
-                    st.write(f"Requested: {deal['timestamp']}")
-                    st.write(f"By: {deal['user']}")
-                
-                with col4:
-                    if st.button("✅ Approve", key=f"approve_{deal['id']}"):
-                        for d in st.session_state.fx_deals:
-                            if d['id'] == deal['id']:
-                                d['status'] = 'Approved'
-                        st.success("Deal approved!")
-                        st.rerun()
-                    
-                    if st.button("❌ Reject", key=f"reject_{deal['id']}"):
-                        st.session_state.fx_deals = [d for d in st.session_state.fx_deals if d['id'] != deal['id']]
-                        st.error("Deal rejected!")
-                        st.rerun()
-                
-                st.divider()
-        
-        st.markdown("</div></div>", unsafe_allow_html=True)
-    
-    # FX Activity Chart
-    st.markdown("""
-    <div class="dashboard-section">
-        <div class="section-header">FX Activity Overview</div>
-        <div class="section-content">
-    """, unsafe_allow_html=True)
-    
-    # Create FX activity chart
-    if st.session_state.fx_deals:
-        # Process deals for visualization
-        sell_data = {}
-        buy_data = {}
-        eur_sold = 0
-        eur_bought = 0
-        
-        for deal in st.session_state.fx_deals:
-            if deal['status'] == 'Approved':
-                if deal['sell_currency'] == 'EUR':
-                    eur_sold += deal['amount']
-                    if deal['buy_currency'] not in buy_data:
-                        buy_data[deal['buy_currency']] = 0
-                    buy_data[deal['buy_currency']] += deal['amount']
-                elif deal['buy_currency'] == 'EUR':
-                    eur_bought += deal['amount']
-                    if deal['sell_currency'] not in sell_data:
-                        sell_data[deal['sell_currency']] = 0
-                    sell_data[deal['sell_currency']] += deal['amount']
-        
-        # Create chart data
-        categories = []
-        values = []
-        colors = []
-        
-        # Add sell currencies
-        for currency, amount in sell_data.items():
-            categories.append(f"SELL {currency}")
-            values.append(amount / 1000000)  # Convert to millions
-            colors.append('#ff6b6b' if currency != 'EUR' else '#00ff88')
-        
-        # Add EUR sold
-        if eur_sold > 0:
-            categories.append("SELL EUR")
-            values.append(eur_sold / 1000000)
-            colors.append('#00ff88')
-        
-        # Add buy currencies  
-        for currency, amount in buy_data.items():
-            categories.append(f"BUY {currency}")
-            values.append(amount / 1000000)
-            colors.append('#4dabf7' if currency != 'EUR' else '#00ff88')
-        
-        # Add EUR bought
-        if eur_bought > 0:
-            categories.append("BUY EUR")
-            values.append(eur_bought / 1000000)
-            colors.append('#00ff88')
-        
-        if categories:
-            fig = go.Figure(data=[
-                go.Bar(
-                    x=categories,
-                    y=values,
-                    marker_color=colors,
-                    text=[f"€{v:.1f}M" for v in values],
-                    textposition='auto',
-                )
-            ])
-            
-            fig.update_layout(
-                height=300,
-                margin=dict(l=0, r=0, t=20, b=0),
-                plot_bgcolor='white',
-                paper_bgcolor='white',
-                showlegend=False,
-                xaxis=dict(tickangle=45),
-                yaxis=dict(title='Million EUR')
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No approved FX deals to display. Submit and approve some deals to see the activity chart.")
-    else:
-        st.info("No FX deals submitted yet. Use the form above to submit your first FX deal request.")
-    
-    st.markdown("</div></div>", unsafe_allow_html=True)
-
-def show_placeholder_page(title, description):
-    """Show placeholder for other pages"""
-    if st.button("🏠 Back to Home", key=f"back_home_{title.lower()}"):
-        st.session_state.current_page = 'overview'
-        st.rerun()
-    
-    st.markdown(f"""
-    <div class="dashboard-section">
-        <div class="section-header">{title}</div>
-        <div class="section-content">
-            <div style="text-align: center; padding: 3rem;">
-                <h3>🚧 {title}</h3>
-                <p>{description}</p>
-                <p><em>This module will be available in the next update.</em></p>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    """Show FX Risk Management dashboard"""
-    if st.button("🏠 Back to Home", key="back_home_fx"):
-        st.session_state.current_page = 'overview'
-        st.rerun()
-    
-    st.markdown('<div class="section-header">FX Risk Management</div>', unsafe_allow_html=True)
-    
-    # Initialize session state for FX deals
-    if 'fx_deals' not in st.session_state:
-        st.session_state.fx_deals = []
-    
-    # Live FX Rates Section
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("""
-        <div class="dashboard-section">
-            <div class="section-header">
-                Live FX Rates vs EUR
-                <span class="status-indicator status-good">Live</span>
-            </div>
-            <div class="section-content">
-        """, unsafe_allow_html=True)
-        
-        # Mock FX rates (in production, get from API)
-        fx_rates = {
-            'USD/EUR': {'rate': 0.9234, 'change': '+0.25%', 'color': 'positive'},
-            'GBP/EUR': {'rate': 1.1678, 'change': '-0.15%', 'color': 'negative'},
-            'CHF/EUR': {'rate': 0.9876, 'change': '+0.08%', 'color': 'positive'},
-            'SEK/EUR': {'rate': 0.0932, 'change': '-0.32%', 'color': 'negative'},
-            'NOK/EUR': {'rate': 0.0856, 'change': '+0.12%', 'color': 'positive'},
-            'CAD/EUR': {'rate': 0.6789, 'change': '+0.18%', 'color': 'positive'}
-        }
-        
-        # FX Rates Grid
-        fx_cols = st.columns(3)
-        for i, (pair, data) in enumerate(fx_rates.items()):
-            with fx_cols[i % 3]:
-                color_class = "change-positive" if data['color'] == 'positive' else "change-negative"
-                st.markdown(f"""
-                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-                    <div style="font-size: 0.875rem; color: #718096; font-weight: 500;">{pair}</div>
-                    <div style="font-size: 1.5rem; font-weight: 600; color: #2d3748; margin: 0.5rem 0;">{data['rate']:.4f}</div>
-                    <div class="{color_class}" style="font-size: 0.875rem; font-weight: 500;">{data['change']}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("</div></div>", unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div class="dashboard-section">
-            <div class="section-header">FX Deal Request</div>
-            <div class="section-content">
-        """, unsafe_allow_html=True)
-        
-        # FX Deal Request Form
-        with st.form("fx_deal_form"):
-            sell_currency = st.selectbox("Sell Currency", 
-                                       ['EUR', 'USD', 'GBP', 'CHF', 'SEK', 'NOK', 'CAD', 'AUD', 'DKK', 'ZAR', 'MYR', 'SGD', 'IDR', 'PLN'])
-            
-            buy_currency = st.selectbox("Buy Currency", 
-                                      ['USD', 'GBP', 'CHF', 'SEK', 'NOK', 'CAD', 'AUD', 'DKK', 'ZAR', 'MYR', 'SGD', 'IDR', 'PLN', 'EUR'])
-            
-            amount = st.number_input("Amount", min_value=1000, value=100000, step=1000)
-            
-            contract_type = st.selectbox("Contract Type", ['Spot', 'Forward', 'Swap', 'Option'])
-            
-            value_date = st.date_input("Value Date", value=datetime.now().date())
-            
-            comments = st.text_area("Comments", placeholder="Optional comments...")
-            
-            submitted = st.form_submit_button("🚀 Submit FX Deal", use_container_width=True)
-            
-            if submitted:
-                if sell_currency != buy_currency:
-                    new_deal = {
-                        'id': len(st.session_state.fx_deals) + 1,
-                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
-                        'sell_currency': sell_currency,
-                        'buy_currency': buy_currency,
-                        'amount': amount,
-                        'contract_type': contract_type,
-                        'value_date': value_date.strftime("%Y-%m-%d"),
-                        'comments': comments,
-                        'status': 'Pending',
-                        'user': 'Treasury User'  # Future: get from login
-                    }
-                    st.session_state.fx_deals.append(new_deal)
-                    st.success("FX Deal submitted successfully!")
-                    st.rerun()
-                else:
-                    st.error("Sell and Buy currencies must be different!")
-        
-        st.markdown("</div></div>", unsafe_allow_html=True)
-    
-    # Pending FX Deals Section
-    if st.session_state.fx_deals:
-        st.markdown("""
-        <div class="dashboard-section">
-            <div class="section-header">Pending FX Deals</div>
-            <div class="section-content">
-        """, unsafe_allow_html=True)
-        
-        # Display deals in a table format
-        for deal in st.session_state.fx_deals:
-            if deal['status'] == 'Pending':
-                col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
-                
-                with col1:
-                    st.write(f"**{deal['sell_currency']}/{deal['buy_currency']}**")
-                    st.write(f"Amount: {deal['amount']:,}")
-                
-                with col2:
-                    st.write(f"Type: {deal['contract_type']}")
-                    st.write(f"Value Date: {deal['value_date']}")
-                
-                with col3:
-                    st.write(f"Requested: {deal['timestamp']}")
-                    st.write(f"By: {deal['user']}")
-                
-                with col4:
-                    if st.button("✅ Approve", key=f"approve_{deal['id']}"):
-                        for d in st.session_state.fx_deals:
-                            if d['id'] == deal['id']:
-                                d['status'] = 'Approved'
-                        st.success("Deal approved!")
-                        st.rerun()
-                    
-                    if st.button("❌ Reject", key=f"reject_{deal['id']}"):
-                        st.session_state.fx_deals = [d for d in st.session_state.fx_deals if d['id'] != deal['id']]
-                        st.error("Deal rejected!")
-                        st.rerun()
-                
-                st.divider()
-        
-        st.markdown("</div></div>", unsafe_allow_html=True)
-    
-    # FX Activity Chart
-    st.markdown("""
-    <div class="dashboard-section">
-        <div class="section-header">FX Activity Overview</div>
-        <div class="section-content">
-    """, unsafe_allow_html=True)
-    
-    # Create FX activity chart
-    if st.session_state.fx_deals:
-        # Process deals for visualization
-        sell_data = {}
-        buy_data = {}
-        eur_sold = 0
-        eur_bought = 0
-        
-        for deal in st.session_state.fx_deals:
-            if deal['status'] == 'Approved':
-                if deal['sell_currency'] == 'EUR':
-                    eur_sold += deal['amount']
-                    if deal['buy_currency'] not in buy_data:
-                        buy_data[deal['buy_currency']] = 0
-                    buy_data[deal['buy_currency']] += deal['amount']
-                elif deal['buy_currency'] == 'EUR':
-                    eur_bought += deal['amount']
-                    if deal['sell_currency'] not in sell_data:
-                        sell_data[deal['sell_currency']] = 0
-                    sell_data[deal['sell_currency']] += deal['amount']
-        
-        # Create chart data
-        categories = []
-        values = []
-        colors = []
-        
-        # Add sell currencies
-        for currency, amount in sell_data.items():
-            categories.append(f"SELL {currency}")
-            values.append(amount / 1000000)  # Convert to millions
-            colors.append('#ff6b6b' if currency != 'EUR' else '#00ff88')
-        
-        # Add EUR sold
-        if eur_sold > 0:
-            categories.append("SELL EUR")
-            values.append(eur_sold / 1000000)
-            colors.append('#00ff88')
-        
-        # Add buy currencies  
-        for currency, amount in buy_data.items():
-            categories.append(f"BUY {currency}")
-            values.append(amount / 1000000)
-            colors.append('#4dabf7' if currency != 'EUR' else '#00ff88')
-        
-        # Add EUR bought
-        if eur_bought > 0:
-            categories.append("BUY EUR")
-            values.append(eur_bought / 1000000)
-            colors.append('#00ff88')
-        
-        if categories:
-            fig = go.Figure(data=[
-                go.Bar(
-                    x=categories,
-                    y=values,
-                    marker_color=colors,
-                    text=[f"€{v:.1f}M" for v in values],
-                    textposition='auto',
-                )
-            ])
-            
-            fig.update_layout(
-                height=300,
-                margin=dict(l=0, r=0, t=20, b=0),
-                plot_bgcolor='white',
-                paper_bgcolor='white',
-                showlegend=False,
-                xaxis=dict(tickangle=45),
-                yaxis=dict(title='Million EUR')
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No approved FX deals to display. Submit and approve some deals to see the activity chart.")
-    else:
-        st.info("No FX deals submitted yet. Use the form above to submit your first FX deal request.")
-    
-    st.markdown("</div></div>", unsafe_allow_html=True)
-
-# Main application
-def main():
-    """Main application with professional interface"""
-    
-    # Create professional header
-    create_professional_header()
-    
-    # Navigation
-    create_navigation()
-    
-    # Route to pages
-    if st.session_state.current_page == 'overview':
-        show_executive_overview()
-    elif st.session_state.current_page == 'fx_risk':
-        show_fx_risk()
-    elif st.session_state.current_page == 'operations':
-        show_daily_operations()
-            def show_daily_operations():
-    """Show Daily Operations dashboard with all requested functionality"""
-    if st.button("🏠 Back to Home", key="back_home_operations"):
-        st.session_state.current_page = 'overview'
-        st.rerun()
-    
-    st.markdown('<div class="section-header">Daily Operations Center</div>', unsafe_allow_html=True)
-    
-    # Initialize session states
-    if 'operational_workflows' not in st.session_state:
-        st.session_state.operational_workflows = []
-    if 'intraday_transfers' not in st.session_state:
-        st.session_state.intraday_transfers = []
-    if 'pcard_requests' not in st.session_state:
-        st.session_state.pcard_requests = []
-    
-    # TOP ROW: Operational Workflows + Intraday Transfers
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        st.markdown("""
-        <div class="dashboard-section">
-            <div class="section-header">📋 Operational Workflows</div>
-            <div class="section-content">
-        """, unsafe_allow_html=True)
-        
-        # Workflow Form
-        with st.form("workflow_form", clear_on_submit=True):
-            subject = st.text_input("Subject", placeholder="Enter task subject...")
-            workflow_date = st.date_input("Date", value=datetime.now().date())
-            notes = st.text_area("Notes", placeholder="Additional details and notes...", height=80)
-            
-            submitted = st.form_submit_button("➕ Add Workflow", use_container_width=True)
-            
-            if submitted and subject.strip():
-                new_workflow = {
-                    'id': len(st.session_state.operational_workflows) + 1,
-                    'subject': subject.strip(),
-                    'date': workflow_date.strftime("%Y-%m-%d"),
-                    'notes': notes.strip(),
-                    'status': 'Pending',
-                    'created': datetime.now().strftime("%Y-%m-%d %H:%M")
-                }
-                st.session_state.operational_workflows.append(new_workflow)
-                st.success("Workflow added successfully!")
-                st.rerun()
-        
-        # Display Workflows with hover tooltips
-        if st.session_state.operational_workflows:
-            st.markdown("**Active Workflows:**")
-            
-            for workflow in st.session_state.operational_workflows:
-                # Create unique key for each workflow
-                col_a, col_b, col_c = st.columns([3, 1, 1])
-                
-                with col_a:
-                    # Create tooltip effect using title attribute
-                    tooltip_text = f"Notes: {workflow['notes']}\nCreated: {workflow['created']}"
-                    status_color = "🟡" if workflow['status'] == 'Pending' else "🟢"
-                    
-                    st.markdown(f"""
-                    <div style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid {'#ffc107' if workflow['status'] == 'Pending' else '#28a745'};" title="{tooltip_text}">
-                        <strong>{workflow['subject']}</strong><br>
-                        <small style="color: #6c757d;">{workflow['date']}</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col_b:
-                    st.write(f"**{workflow['status']}**")
-                
-                with col_c:
-                    if workflow['status'] == 'Pending':
-                        if st.button("✅", key=f"complete_{workflow['id']}", help="Mark as Concluded"):
-                            for w in st.session_state.operational_workflows:
-                                if w['id'] == workflow['id']:
-                                    w['status'] = 'Concluded'
-                            st.rerun()
-                    else:
-                        if st.button("🔄", key=f"reopen_{workflow['id']}", help="Mark as Pending"):
-                            for w in st.session_state.operational_workflows:
-                                if w['id'] == workflow['id']:
-                                    w['status'] = 'Pending'
-                            st.rerun()
-        else:
-            st.info("No workflows created yet.")
-        
-        st.markdown("</div></div>", unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div class="dashboard-section">
-            <div class="section-header">💸 Intraday Transfers</div>
-            <div class="section-content">
-        """, unsafe_allow_html=True)
-        
-        # Company list for dropdowns (you can customize this)
-        companies = [
-            "Holding Company Ltd",
-            "Operations Co",
-            "European Subsidiary",
-            "North America Inc", 
-            "Asia Pacific Ltd",
-            "Treasury Center",
-            "Investment Vehicle",
-            "Trading Entity",
-            "Service Company",
-            "Technology Division"
-        ]
-        
-        # Transfer Form
-        with st.form("transfer_form", clear_on_submit=True):
-            from_company = st.selectbox("From", companies, key="from_comp")
-            to_company = st.selectbox("To", companies, key="to_comp")
-            transfer_date = st.date_input("Date", value=datetime.now().date(), key="transfer_date")
-            amount = st.number_input("Amount (EUR)", min_value=1000, value=100000, step=1000, key="transfer_amount")
-            
-            transfer_submitted = st.form_submit_button("💾 Save Transfer", use_container_width=True)
-            
-            if transfer_submitted:
-                if from_company != to_company:
-                    new_transfer = {
-                        'id': len(st.session_state.intraday_transfers) + 1,
-                        'from_company': from_company,
-                        'to_company': to_company,
-                        'date': transfer_date.strftime("%Y-%m-%d"),
-                        'amount': amount,
                         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
                     }
                     st.session_state.intraday_transfers.append(new_transfer)
@@ -1822,10 +1244,319 @@ def main():
         """, unsafe_allow_html=True)
     
     st.markdown("</div></div>", unsafe_allow_html=True)
+
+def show_placeholder_page(title, description):
+    """Show placeholder for other pages"""
+    if st.button("🏠 Back to Home", key=f"back_home_{title.lower()}"):
+        st.session_state.current_page = 'overview'
+        st.rerun()
+    
+    st.markdown(f"""
+    <div class="dashboard-section">
+        <div class="section-header">{title}</div>
+        <div class="section-content">
+            <div style="text-align: center; padding: 3rem;">
+                <h3>🚧 {title}</h3>
+                <p>{description}</p>
+                <p><em>This module will be available in the next update.</em></p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Main application
+def main():
+    """Main application with professional interface"""
+    
+    # Create professional header
+    create_professional_header()
+    
+    # Navigation
+    create_navigation()
+    
+    # Route to pages
+    if st.session_state.current_page == 'overview':
+        show_executive_overview()
+    elif st.session_state.current_page == 'fx_risk':
+        show_fx_risk()
+    elif st.session_state.current_page == 'operations':
+        show_daily_operations()
     elif st.session_state.current_page == 'investments':
         show_placeholder_page("Investment Portfolio", "Portfolio management and investment performance tracking.")
     else:
         show_executive_overview()
 
 if __name__ == "__main__":
-    main()
+    main()now().strftime("%Y-%m-%d %H:%M"),
+                        'sell_currency': sell_currency,
+                        'buy_currency': buy_currency,
+                        'amount': amount,
+                        'contract_type': contract_type,
+                        'value_date': value_date.strftime("%Y-%m-%d"),
+                        'comments': comments,
+                        'status': 'Pending',
+                        'user': 'Treasury User'  # Future: get from login
+                    }
+                    st.session_state.fx_deals.append(new_deal)
+                    st.success("FX Deal submitted successfully!")
+                    st.rerun()
+                else:
+                    st.error("Sell and Buy currencies must be different!")
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # Pending FX Deals Section
+    if st.session_state.fx_deals:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">Pending FX Deals</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Display deals in a table format
+        for deal in st.session_state.fx_deals:
+            if deal['status'] == 'Pending':
+                col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+                
+                with col1:
+                    st.write(f"**{deal['sell_currency']}/{deal['buy_currency']}**")
+                    st.write(f"Amount: {deal['amount']:,}")
+                
+                with col2:
+                    st.write(f"Type: {deal['contract_type']}")
+                    st.write(f"Value Date: {deal['value_date']}")
+                
+                with col3:
+                    st.write(f"Requested: {deal['timestamp']}")
+                    st.write(f"By: {deal['user']}")
+                
+                with col4:
+                    if st.button("✅ Approve", key=f"approve_{deal['id']}"):
+                        for d in st.session_state.fx_deals:
+                            if d['id'] == deal['id']:
+                                d['status'] = 'Approved'
+                        st.success("Deal approved!")
+                        st.rerun()
+                    
+                    if st.button("❌ Reject", key=f"reject_{deal['id']}"):
+                        st.session_state.fx_deals = [d for d in st.session_state.fx_deals if d['id'] != deal['id']]
+                        st.error("Deal rejected!")
+                        st.rerun()
+                
+                st.divider()
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # FX Activity Chart
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">FX Activity Overview</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    # Create FX activity chart
+    if st.session_state.fx_deals:
+        # Process deals for visualization
+        sell_data = {}
+        buy_data = {}
+        eur_sold = 0
+        eur_bought = 0
+        
+        for deal in st.session_state.fx_deals:
+            if deal['status'] == 'Approved':
+                if deal['sell_currency'] == 'EUR':
+                    eur_sold += deal['amount']
+                    if deal['buy_currency'] not in buy_data:
+                        buy_data[deal['buy_currency']] = 0
+                    buy_data[deal['buy_currency']] += deal['amount']
+                elif deal['buy_currency'] == 'EUR':
+                    eur_bought += deal['amount']
+                    if deal['sell_currency'] not in sell_data:
+                        sell_data[deal['sell_currency']] = 0
+                    sell_data[deal['sell_currency']] += deal['amount']
+        
+        # Create chart data
+        categories = []
+        values = []
+        colors = []
+        
+        # Add sell currencies
+        for currency, amount in sell_data.items():
+            categories.append(f"SELL {currency}")
+            values.append(amount / 1000000)  # Convert to millions
+            colors.append('#ff6b6b' if currency != 'EUR' else '#00ff88')
+        
+        # Add EUR sold
+        if eur_sold > 0:
+            categories.append("SELL EUR")
+            values.append(eur_sold / 1000000)
+            colors.append('#00ff88')
+        
+        # Add buy currencies  
+        for currency, amount in buy_data.items():
+            categories.append(f"BUY {currency}")
+            values.append(amount / 1000000)
+            colors.append('#4dabf7' if currency != 'EUR' else '#00ff88')
+        
+        # Add EUR bought
+        if eur_bought > 0:
+            categories.append("BUY EUR")
+            values.append(eur_bought / 1000000)
+            colors.append('#00ff88')
+        
+        if categories:
+            fig = go.Figure(data=[
+                go.Bar(
+                    x=categories,
+                    y=values,
+                    marker_color=colors,
+                    text=[f"€{v:.1f}M" for v in values],
+                    textposition='auto',
+                )
+            ])
+            
+            fig.update_layout(
+                height=300,
+                margin=dict(l=0, r=0, t=20, b=0),
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                showlegend=False,
+                xaxis=dict(tickangle=45),
+                yaxis=dict(title='Million EUR')
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No approved FX deals to display. Submit and approve some deals to see the activity chart.")
+    else:
+        st.info("No FX deals submitted yet. Use the form above to submit your first FX deal request.")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
+def show_daily_operations():
+    """Show Daily Operations dashboard with all requested functionality"""
+    if st.button("🏠 Back to Home", key="back_home_operations"):
+        st.session_state.current_page = 'overview'
+        st.rerun()
+    
+    st.markdown('<div class="section-header">Daily Operations Center</div>', unsafe_allow_html=True)
+    
+    # Initialize session states
+    if 'operational_workflows' not in st.session_state:
+        st.session_state.operational_workflows = []
+    if 'intraday_transfers' not in st.session_state:
+        st.session_state.intraday_transfers = []
+    if 'pcard_requests' not in st.session_state:
+        st.session_state.pcard_requests = []
+    
+    # TOP ROW: Operational Workflows + Intraday Transfers
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">📋 Operational Workflows</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Workflow Form
+        with st.form("workflow_form", clear_on_submit=True):
+            subject = st.text_input("Subject", placeholder="Enter task subject...")
+            workflow_date = st.date_input("Date", value=datetime.now().date())
+            notes = st.text_area("Notes", placeholder="Additional details and notes...", height=80)
+            
+            submitted = st.form_submit_button("➕ Add Workflow", use_container_width=True)
+            
+            if submitted and subject.strip():
+                new_workflow = {
+                    'id': len(st.session_state.operational_workflows) + 1,
+                    'subject': subject.strip(),
+                    'date': workflow_date.strftime("%Y-%m-%d"),
+                    'notes': notes.strip(),
+                    'status': 'Pending',
+                    'created': datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.operational_workflows.append(new_workflow)
+                st.success("Workflow added successfully!")
+                st.rerun()
+        
+        # Display Workflows with hover tooltips
+        if st.session_state.operational_workflows:
+            st.markdown("**Active Workflows:**")
+            
+            for workflow in st.session_state.operational_workflows:
+                # Create unique key for each workflow
+                col_a, col_b, col_c = st.columns([3, 1, 1])
+                
+                with col_a:
+                    # Create tooltip effect using title attribute
+                    tooltip_text = f"Notes: {workflow['notes']}\nCreated: {workflow['created']}"
+                    status_color = "🟡" if workflow['status'] == 'Pending' else "🟢"
+                    
+                    st.markdown(f"""
+                    <div style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid {'#ffc107' if workflow['status'] == 'Pending' else '#28a745'};" title="{tooltip_text}">
+                        <strong>{workflow['subject']}</strong><br>
+                        <small style="color: #6c757d;">{workflow['date']}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col_b:
+                    st.write(f"**{workflow['status']}**")
+                
+                with col_c:
+                    if workflow['status'] == 'Pending':
+                        if st.button("✅", key=f"complete_{workflow['id']}", help="Mark as Concluded"):
+                            for w in st.session_state.operational_workflows:
+                                if w['id'] == workflow['id']:
+                                    w['status'] = 'Concluded'
+                            st.rerun()
+                    else:
+                        if st.button("🔄", key=f"reopen_{workflow['id']}", help="Mark as Pending"):
+                            for w in st.session_state.operational_workflows:
+                                if w['id'] == workflow['id']:
+                                    w['status'] = 'Pending'
+                            st.rerun()
+        else:
+            st.info("No workflows created yet.")
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">💸 Intraday Transfers</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Company list for dropdowns (you can customize this)
+        companies = [
+            "Holding Company Ltd",
+            "Operations Co",
+            "European Subsidiary",
+            "North America Inc", 
+            "Asia Pacific Ltd",
+            "Treasury Center",
+            "Investment Vehicle",
+            "Trading Entity",
+            "Service Company",
+            "Technology Division"
+        ]
+        
+        # Transfer Form
+        with st.form("transfer_form", clear_on_submit=True):
+            from_company = st.selectbox("From", companies, key="from_comp")
+            to_company = st.selectbox("To", companies, key="to_comp")
+            transfer_date = st.date_input("Date", value=datetime.now().date(), key="transfer_date")
+            amount = st.number_input("Amount (EUR)", min_value=1000, value=100000, step=1000, key="transfer_amount")
+            
+            transfer_submitted = st.form_submit_button("💾 Save Transfer", use_container_width=True)
+            
+            if transfer_submitted:
+                if from_company != to_company:
+                    new_transfer = {
+                        'id': len(st.session_state.intraday_transfers) + 1,
+                        'from_company': from_company,
+                        'to_company': to_company,
+                        'date': transfer_date.strftime("%Y-%m-%d"),
+                        'amount': amount,
+                        'timestamp': datetime.
