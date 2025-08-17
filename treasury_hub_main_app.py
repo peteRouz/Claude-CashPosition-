@@ -282,7 +282,7 @@ def create_professional_header():
         <div class="header-content">
             <div>
                 <div class="company-brand">Treasury Operations Center</div>
-                <div class="company-subtitle">Real-time Financial Command & Control • Last Update: {summary['last_updated']}</div>
+                <div class="company-subtitle">Real-time Financial Command & Control - Last Update: {summary['last_updated']}</div>
             </div>
             <div class="header-metrics">
                 <div class="header-metric">
