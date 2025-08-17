@@ -1648,8 +1648,9 @@ def main():
     create_navigation()
     
     # Route to pages
-    # DEBUG: Show current page state more prominently
-    st.write(f"🔍 **CURRENT PAGE STATE: {st.session_state.current_page}**")
+    # Simple debug indicator
+    if st.session_state.current_page == 'executive':
+        st.info("🎯 EXECUTIVE OVERVIEW MODE ACTIVATED!")
     
     if st.session_state.current_page == 'overview':
         show_homepage()
