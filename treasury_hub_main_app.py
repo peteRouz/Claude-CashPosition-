@@ -634,7 +634,7 @@ def create_professional_header():
 def create_navigation():
     """Create navigation"""
     nav_items = [
-        ('overview', 'Executive Overview'),
+        ('executive', 'Executive Overview'),
         ('fx_risk', 'FX Risk Management'), 
         ('investments', 'Investment Portfolio'),
         ('operations', 'Daily Operations')
