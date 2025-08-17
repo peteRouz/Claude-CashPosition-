@@ -286,7 +286,7 @@ def create_professional_header():
             </div>
             <div class="header-metrics">
                 <div class="header-metric">
-                    <div class="metric-value">€{summary['total_liquidity']:.1f}M</div>
+                    <div class="metric-value">{summary['total_liquidity']:.1f}M</div>
                     <div class="metric-label">Total Liquidity</div>
                 </div>
                 <div class="header-metric">
