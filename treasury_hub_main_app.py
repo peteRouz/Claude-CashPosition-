@@ -1268,8 +1268,356 @@ def main():
         show_fx_risk()
     elif st.session_state.current_page == 'operations':
         show_daily_operations()
-    elif st.session_state.current_page == 'investments':
-        show_placeholder_page("Investment Portfolio", "Portfolio management and investment performance tracking.")
+    def show_investment_portfolio():
+    """Show Investment Portfolio dashboard with tracking functionality"""
+    if st.button("🏠 Back to Home", key="back_home_investments"):
+        st.session_state.current_page = 'overview'
+        st.rerun()
+    
+    st.markdown('<div class="section-header">Investment Portfolio Tracking</div>', unsafe_allow_html=True)
+    
+    # Initialize session state for investments
+    if 'investment_transactions' not in st.session_state:
+        st.session_state.investment_transactions = []
+    
+    # TOP ROW: Transaction Form + Summary Cards
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">📝 Add Investment Transaction</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Investment Transaction Form
+        with st.form("investment_form", clear_on_submit=True):
+            transaction_date = st.date_input("Date", value=datetime.now().date())
+            
+            transaction_type = st.selectbox("Type", [
+                "Deposit",
+                "Interest", 
+                "Redemption",
+                "Account Balance Update"
+            ])
+            
+            from_entity = st.selectbox("From", [
+                "Group Holding",
+                "Treasury Center",
+                "Investment Account",
+                "MMF",
+                "TD",
+                "External Source"
+            ])
+            
+            to_entity = st.selectbox("To", [
+                "MMF",
+                "TD", 
+                "Account",
+                "Group Holding",
+                "Treasury Center",
+                "External Destination"
+            ])
+            
+            amount = st.number_input("Amount (EUR)", min_value=0.01, value=1000.00, step=100.00)
+            
+            notes = st.text_area("Notes (Optional)", placeholder="Additional transaction details...", height=60)
+            
+            submitted = st.form_submit_button("💰 Add Transaction", use_container_width=True)
+            
+            if submitted:
+                new_transaction = {
+                    'id': len(st.session_state.investment_transactions) + 1,
+                    'date': transaction_date.strftime("%Y-%m-%d"),
+                    'type': transaction_type,
+                    'from': from_entity,
+                    'to': to_entity,
+                    'amount': float(amount),
+                    'notes': notes.strip(),
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.investment_transactions.append(new_transaction)
+                st.success(f"{transaction_type} of EUR {amount:,.2f} added successfully!")
+                st.rerun()
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    with col2:
+        # Calculate summary metrics
+        transactions = st.session_state.investment_transactions
+        
+        # Current Balances: (Deposits + Interest + Updates) - Redemptions
+        deposits = sum(t['amount'] for t in transactions if t['type'] == 'Deposit')
+        interests = sum(t['amount'] for t in transactions if t['type'] == 'Interest')
+        updates = sum(t['amount'] for t in transactions if t['type'] == 'Account Balance Update')
+        redemptions = sum(t['amount'] for t in transactions if t['type'] == 'Redemption')
+        
+        current_balance = deposits + interests + updates - redemptions
+        interest_earned = interests
+        
+        # Summary Cards
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">💰 Portfolio Summary</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Current Balances Card
+        st.markdown(f"""
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #007bff;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.2rem; margin-right: 0.5rem;">🏛️</span>
+                <span style="font-weight: 600; color: #495057;">Current Balances</span>
+            </div>
+            <div style="font-size: 2rem; font-weight: 700; color: #2d3748;">EUR {current_balance:,.2f}</div>
+            <div style="font-size: 0.9rem; color: #6c757d; margin-top: 0.5rem;">
+                Deposits: EUR {deposits:,.2f} | Updates: EUR {updates:,.2f} | Redemptions: EUR {redemptions:,.2f}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Interest Earned Card
+        st.markdown(f"""
+        <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #ffc107;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.2rem; margin-right: 0.5rem;">🟡</span>
+                <span style="font-weight: 600; color: #495057;">Interest Earned</span>
+            </div>
+            <div style="font-size: 2rem; font-weight: 700; color: #2d3748;">EUR {interest_earned:,.2f}</div>
+            <div style="font-size: 0.9rem; color: #6c757d; margin-top: 0.5rem;">
+                Total interest payments received
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # MIDDLE ROW: Total Value Summary Table
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">📋 Investment Summary by Product</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    if transactions:
+        # Calculate balances by product (To field)
+        product_summary = {}
+        
+        for transaction in transactions:
+            product = transaction['to']
+            if product not in product_summary:
+                product_summary[product] = {
+                    'deposits': 0,
+                    'interest': 0,
+                    'updates': 0,
+                    'redemptions': 0,
+                    'last_activity': transaction['date']
+                }
+            
+            # Update amounts by type
+            if transaction['type'] == 'Deposit':
+                product_summary[product]['deposits'] += transaction['amount']
+            elif transaction['type'] == 'Interest':
+                product_summary[product]['interest'] += transaction['amount']
+            elif transaction['type'] == 'Account Balance Update':
+                product_summary[product]['updates'] += transaction['amount']
+            elif transaction['type'] == 'Redemption':
+                product_summary[product]['redemptions'] += transaction['amount']
+            
+            # Update last activity (keep most recent)
+            if transaction['date'] > product_summary[product]['last_activity']:
+                product_summary[product]['last_activity'] = transaction['date']
+        
+        # Create summary table
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
+        
+        with col1:
+            st.markdown("**Product**")
+        with col2:
+            st.markdown("**Current Balance**")
+        with col3:
+            st.markdown("**Accrued Interest**")
+        with col4:
+            st.markdown("**Last Activity**")
+        
+        st.markdown("---")
+        
+        # Display each product
+        for product, data in product_summary.items():
+            if product in ['MMF', 'TD', 'Account']:  # Only show investment products
+                current_balance = data['deposits'] + data['interest'] + data['updates'] - data['redemptions']
+                accrued_interest = data['interest']
+                last_activity = data['last_activity']
+                
+                col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
+                
+                with col1:
+                    if product == 'MMF':
+                        st.markdown("**💰 MMF**")
+                    elif product == 'TD':
+                        st.markdown("**🏦 TD**")
+                    else:
+                        st.markdown(f"**📊 {product}**")
+                
+                with col2:
+                    st.markdown(f"EUR {current_balance:,.2f}")
+                
+                with col3:
+                    st.markdown(f"EUR {accrued_interest:,.2f}")
+                
+                with col4:
+                    formatted_date = datetime.strptime(last_activity, "%Y-%m-%d").strftime("%d/%m/%Y")
+                    st.markdown(f"{formatted_date}")
+                
+                st.markdown("---")
+    
+    else:
+        st.info("No investment transactions recorded yet. Add your first transaction above!")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # BOTTOM ROW: Investment Growth Chart
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">📈 Total Value Growth</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    if transactions:
+        # Calculate cumulative value over time
+        # Sort transactions by date
+        sorted_transactions = sorted(transactions, key=lambda x: x['date'])
+        
+        dates = []
+        cumulative_values = []
+        running_total = 0
+        
+        for transaction in sorted_transactions:
+            transaction_date = datetime.strptime(transaction['date'], "%Y-%m-%d")
+            
+            # Add/subtract based on transaction type
+            if transaction['type'] in ['Deposit', 'Interest', 'Account Balance Update']:
+                running_total += transaction['amount']
+            elif transaction['type'] == 'Redemption':
+                running_total -= transaction['amount']
+            
+            dates.append(transaction_date)
+            cumulative_values.append(running_total)
+        
+        # Create the growth chart
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
+            x=dates,
+            y=cumulative_values,
+            mode='lines+markers',
+            name='Total Investment Value',
+            line=dict(color='#007bff', width=3),
+            fill='tonexty',
+            fillcolor='rgba(0, 123, 255, 0.1)',
+            marker=dict(size=6, color='#007bff'),
+            hovertemplate='<b>%{x|%d %b %Y}</b><br>EUR %{y:,.2f}<extra></extra>'
+        ))
+        
+        fig.update_layout(
+            height=350,
+            margin=dict(l=0, r=0, t=20, b=0),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            showlegend=False,
+            xaxis=dict(
+                title='Date',
+                showgrid=True,
+                gridcolor='#f1f5f9',
+                tickformat='%d %b'
+            ),
+            yaxis=dict(
+                title='EUR',
+                showgrid=True,
+                gridcolor='#f1f5f9',
+                tickformat=',.0f'
+            )
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Chart summary
+        if cumulative_values:
+            total_growth = cumulative_values[-1] - cumulative_values[0] if len(cumulative_values) > 1 else cumulative_values[0]
+            growth_percentage = (total_growth / cumulative_values[0] * 100) if cumulative_values[0] != 0 else 0
+            
+            st.caption(f"📊 Portfolio Growth: EUR {total_growth:,.2f} ({growth_percentage:+.1f}%) • Latest Value: EUR {cumulative_values[-1]:,.2f} • Transactions: {len(transactions)}")
+    
+    else:
+        # Show placeholder chart
+        st.info("📈 Investment growth chart will appear here once you add transactions")
+        
+        # Sample chart to show structure
+        sample_dates = pd.date_range(start=datetime.now() - timedelta(days=90), periods=10, freq='10D')
+        sample_values = [3000, 3200, 3150, 3400, 3600, 3800, 4100, 4050, 4300, 4500]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=sample_dates,
+            y=sample_values,
+            mode='lines',
+            name='Sample Growth',
+            line=dict(color='#28a745', width=2, dash='dash'),
+            opacity=0.6
+        ))
+        
+        fig.update_layout(
+            height=350,
+            margin=dict(l=0, r=0, t=20, b=0),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            showlegend=False,
+            xaxis=dict(title='Date', showgrid=True, gridcolor='#f1f5f9'),
+            yaxis=dict(title='EUR', showgrid=True, gridcolor='#f1f5f9')
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("💡 Sample chart - Add your investment transactions to see real growth")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # Transaction History (Optional - can be expandable)
+    if transactions:
+        with st.expander(f"📋 Transaction History ({len(transactions)} transactions)"):
+            # Show recent transactions in a nice format
+            recent_transactions = sorted(transactions, key=lambda x: x['timestamp'], reverse=True)[:10]
+            
+            for transaction in recent_transactions:
+                col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 2])
+                
+                with col1:
+                    formatted_date = datetime.strptime(transaction['date'], "%Y-%m-%d").strftime("%d/%m/%Y")
+                    st.text(formatted_date)
+                
+                with col2:
+                    # Color code by type
+                    if transaction['type'] == 'Deposit':
+                        st.markdown(f"🟢 **{transaction['type']}**")
+                    elif transaction['type'] == 'Interest':
+                        st.markdown(f"🟡 **{transaction['type']}**")
+                    elif transaction['type'] == 'Redemption':
+                        st.markdown(f"🔴 **{transaction['type']}**")
+                    else:
+                        st.markdown(f"🔵 **{transaction['type']}**")
+                
+                with col3:
+                    st.text(transaction['from'])
+                
+                with col4:
+                    st.text(transaction['to'])
+                
+                with col5:
+                    st.text(f"EUR {transaction['amount']:,.2f}")
+                
+                if transaction.get('notes'):
+                    st.caption(f"📝 {transaction['notes']}")
+                
+                st.markdown("---")elif st.session_state.current_page == 'investments':
     else:
         show_executive_overview()
 
