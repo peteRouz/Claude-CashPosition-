@@ -785,7 +785,9 @@ def get_bank_positions_from_tabelas():
 def get_bank_currency_details():
     """
     Obter detalhes das moedas por banco da sheet 'Tabelas'
-    Retorna um dicionário com os dados de cada banco e suas moedas
+    - Linha 1, colunas B-O: Headers das moedas
+    - Linhas 2-14, coluna A: Nomes dos bancos
+    - Linhas 2-14, colunas B-O: Valores das moedas por banco
     """
     try:
         excel_file = "TREASURY DASHBOARD.xlsx"
@@ -797,15 +799,26 @@ def get_bank_currency_details():
         else:
             return get_fallback_currency_data()
         
-        lista_contas_sheet = pd.read_excel(file_path, sheet_name="tabelas", header=None)
-        currencies = ['AUD', 'NOK', 'DKK', 'USD', 'GBP', 'EUR', 'CHF', 'ZAR', 'SEK', 'MYR', 'SGD', 'IDR', 'CAD', 'PLN']
+        # Ler a sheet "Tabelas"
+        tabelas_sheet = pd.read_excel(file_path, sheet_name="Tabelas", header=None)
+        
         bank_currency_data = {}
         
-        for row_idx in range(1, 14):
+        # Ler headers das moedas da linha 1 (índice 0), colunas B-O (índices 1-14)
+        currency_headers = []
+        for col_idx in range(1, 15):  # Colunas B (1) a O (14)
+            if col_idx < tabelas_sheet.shape[1]:
+                header_value = tabelas_sheet.iloc[0, col_idx]  # Linha 1 (índice 0)
+                if pd.notna(header_value) and str(header_value).strip():
+                    currency_headers.append((col_idx, str(header_value).strip()))
+        
+        # Procurar bancos nas linhas 2-14 (índices 1-13)
+        for row_idx in range(1, 14):  # Linhas 2-14 (índices 1-13)
             try:
                 if row_idx >= tabelas_sheet.shape[0]:
                     break
                     
+                # Nome do banco na coluna A (índice 0)
                 bank_name = tabelas_sheet.iloc[row_idx, 0]
                 
                 if pd.notna(bank_name) and str(bank_name).strip():
@@ -813,34 +826,42 @@ def get_bank_currency_details():
                     currency_data = {}
                     total_eur_equivalent = 0
                     
-                    for col_idx, currency in enumerate(currencies, start=1):
-                        if col_idx < tabelas_sheet.shape[1]:
+                    # Procurar valores das moedas nas colunas B-O (usando os headers encontrados)
+                    for col_idx, currency_name in currency_headers:
+                        try:
                             cell_value = tabelas_sheet.iloc[row_idx, col_idx]
                             
                             if pd.notna(cell_value) and cell_value != 0:
                                 try:
                                     amount = float(cell_value)
                                     if amount != 0:
-                                        currency_data[currency] = {
+                                        currency_data[currency_name] = {
                                             'amount': amount,
-                                            'formatted': f"{amount:,.0f}" if amount >= 1 else f"{amount:.2f}"
+                                            'formatted': f"{amount:,.0f}" if amount >= 1000 else f"{amount:.2f}"
                                         }
                                         
-                                        if currency == 'EUR':
+                                        # Converter para EUR para cálculo de percentagem (aproximação)
+                                        if currency_name.upper() == 'EUR':
                                             total_eur_equivalent += amount
-                                        elif currency == 'USD':
+                                        elif currency_name.upper() == 'USD':
                                             total_eur_equivalent += amount * 0.92
-                                        elif currency == 'GBP':
+                                        elif currency_name.upper() == 'GBP':
                                             total_eur_equivalent += amount * 1.17
+                                        elif currency_name.upper() in ['SEK', 'NOK', 'DKK']:
+                                            total_eur_equivalent += amount * 0.09
                                         else:
-                                            total_eur_equivalent += amount * 0.1
+                                            total_eur_equivalent += amount * 0.5
                                 
                                 except (ValueError, TypeError):
                                     continue
+                        except Exception:
+                            continue
                     
+                    # Só adicionar se tiver dados de moedas
                     if currency_data:
+                        # Calcular percentagens
                         for currency in currency_data:
-                            if currency == 'EUR' and total_eur_equivalent > 0:
+                            if total_eur_equivalent > 0:
                                 percentage = (currency_data[currency]['amount'] / total_eur_equivalent) * 100
                                 currency_data[currency]['percentage'] = f"{percentage:.1f}%"
                         
