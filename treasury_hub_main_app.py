@@ -2114,7 +2114,7 @@ def show_executive_overview_with_hover():
             Top 5 banks represent 65% of total liquidity, ensuring balanced concentration risk.
         </div>
     </div>
-    """, unsafe_allow_html=True)date_value) and pd.notna(eur_value) and eur_value != 0:
+                    if pd.notna(date_value) and pd.notna(eur_value) and eur_value != 0:
                         try:
                             if isinstance(date_value, str):
                                 date_str = str(date_value).strip()
