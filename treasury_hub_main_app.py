@@ -1193,49 +1193,81 @@ def show_executive_overview_with_hover():
     with col2:
         st.markdown("""
         <div class="dashboard-section">
-            <div class="section-header">💰 Cash Positions with Currency Hover</div>
-            <div class="section-content" style="padding: 0;">
+            <div class="section-header">💰 Cash Positions - Click to Expand</div>
+            <div class="section-content">
         """, unsafe_allow_html=True)
         
         banks_df = get_bank_positions_from_tabelas()
         
-        banks_html = '<div style="height: 300px; overflow-y: auto; font-family: \'Inter\', sans-serif;">'
-        
+        # Para cada banco, criar um expander clicável
         for _, row in banks_df.iterrows():
             bank_name = row['Bank']
             
+            # Procurar dados de moedas para este banco
             currency_data = None
             for stored_bank, data in bank_currency_data.items():
                 if stored_bank.lower() in bank_name.lower() or bank_name.lower() in stored_bank.lower():
                     currency_data = data
                     break
             
-            if currency_data:
-                tooltip_content = create_bank_hover_tooltip(bank_name, currency_data)
-            else:
-                tooltip_content = f'<div style="background: white; border: 1px solid #ccc; padding: 8px; border-radius: 4px;"><strong>{bank_name}</strong><br>No currency details available</div>'
+            # Mostrar informação básica do banco sempre visível
+            col_bank, col_balance = st.columns([3, 1])
             
-            banks_html += f"""
-            <div class="bank-row">
-                <div>
-                    <div style="font-weight: 700; color: #262730; font-size: 0.95rem;">{bank_name}</div>
-                    <div style="font-weight: 400; color: #8e8ea0; font-size: 0.8rem;">{row['Currency']} • {row['Yield']}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 700; color: #262730;">EUR {row['Balance']:.1f}M</div>
-                </div>
-                <div class="tooltip">
-                    {tooltip_content}
-                </div>
-            </div>
-            """
-        
-        banks_html += "</div>"
-        
-        st.components.v1.html(banks_html, height=300, scrolling=True)
+            with col_bank:
+                # Se tem dados de moedas, mostrar quantas moedas tem
+                if currency_data:
+                    total_currencies = currency_data['total_currencies']
+                    main_currency = currency_data['main_currency']
+                    st.markdown(f"**{bank_name}**")
+                    st.caption(f"{row['Currency']} • {row['Yield']} • {total_currencies} currencies")
+                else:
+                    st.markdown(f"**{bank_name}**")
+                    st.caption(f"{row['Currency']} • {row['Yield']}")
+            
+            with col_balance:
+                st.markdown(f"**EUR {row['Balance']:.1f}M**")
+            
+            # Se tem dados de moedas, criar expander para mostrar detalhes
+            if currency_data:
+                with st.expander(f"💱 Show {currency_data['total_currencies']} currencies", expanded=False):
+                    currencies = currency_data['currencies']
+                    
+                    # Ordenar moedas por montante (maior primeiro)
+                    sorted_currencies = sorted(currencies.items(), key=lambda x: x[1]['amount'], reverse=True)
+                    
+                    for currency, details in sorted_currencies:
+                        amount_formatted = details['formatted']
+                        percentage = details.get('percentage', '')
+                        
+                        # Criar colunas para moeda e valor
+                        col_curr, col_val = st.columns([1, 2])
+                        
+                        with col_curr:
+                            # Cor da moeda baseada no tipo
+                            if currency.upper() == 'EUR':
+                                st.markdown(f"🔵 **{currency}**")
+                            elif currency.upper() == 'USD':
+                                st.markdown(f"🟢 **{currency}**")
+                            elif currency.upper() == 'GBP':
+                                st.markdown(f"🔴 **{currency}**")
+                            else:
+                                st.markdown(f"⚫ **{currency}**")
+                        
+                        with col_val:
+                            st.markdown(f"**{amount_formatted}**")
+                            if percentage:
+                                st.caption(f"{percentage}")
+                    
+                    st.caption(f"💡 Main currency: **{currency_data['main_currency']}**")
+            else:
+                # Se não tem dados de moedas, mostrar mensagem simples
+                st.caption("ℹ️ No currency breakdown available")
+            
+            st.divider()  # Linha separadora entre bancos
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         
+        # Debug section mais compacta
         with st.expander("🔍 Debug - Currency Data Found"):
             if bank_currency_data:
                 for bank_name, data in bank_currency_data.items():
