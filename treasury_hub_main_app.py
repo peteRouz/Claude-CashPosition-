@@ -265,7 +265,7 @@ def generate_trading_chart_data(base_price=1.0857, days=30):
     return pd.DataFrame(ohlc_data)
 
 def create_fx_trading_chart(pair_name="EUR/USD"):
-    """Create professional trading chart"""
+    """Create professional trading chart with WHITE background"""
     # Generate data
     chart_data = generate_trading_chart_data()
     
@@ -277,9 +277,9 @@ def create_fx_trading_chart(pair_name="EUR/USD"):
         low=chart_data['low'],
         close=chart_data['close'],
         name=pair_name,
-        increasing_line_color='#00ff88',
-        decreasing_line_color='#ff4444',
-        increasing_fillcolor='#00ff88',
+        increasing_line_color='#00c851',  # Green for up
+        decreasing_line_color='#ff4444',  # Red for down
+        increasing_fillcolor='#00c851',
         decreasing_fillcolor='#ff4444'
     )])
     
@@ -290,37 +290,40 @@ def create_fx_trading_chart(pair_name="EUR/USD"):
         y=chart_data['ma_20'],
         mode='lines',
         name='MA(20)',
-        line=dict(color='#ffa500', width=1.5),
+        line=dict(color='#ff8800', width=2),  # Orange moving average
         opacity=0.8
     ))
     
-    # Professional styling
+    # WHITE BACKGROUND Professional styling
     fig.update_layout(
         title=f"{pair_name} - Live Trading Chart",
         height=400,
         margin=dict(l=0, r=0, t=40, b=0),
-        plot_bgcolor='#0e1117',
-        paper_bgcolor='#0e1117',
-        font=dict(color='white', size=12),
+        plot_bgcolor='white',  # WHITE background instead of black
+        paper_bgcolor='white',  # WHITE paper background
+        font=dict(color='#2d3748', size=12),  # Dark text for readability
         xaxis=dict(
             showgrid=True,
-            gridcolor='#333333',
+            gridcolor='#e2e8f0',  # Light gray grid
             gridwidth=0.5,
             type='date',
-            rangeslider=dict(visible=False)
+            rangeslider=dict(visible=False),
+            linecolor='#cbd5e0'  # Light border
         ),
         yaxis=dict(
             showgrid=True,
-            gridcolor='#333333',
+            gridcolor='#e2e8f0',  # Light gray grid
             gridwidth=0.5,
-            side='right'
+            side='right',
+            linecolor='#cbd5e0'  # Light border
         ),
         legend=dict(
             orientation="h",
             yanchor="bottom",
             y=1.02,
             xanchor="right",
-            x=1
+            x=1,
+            bgcolor='rgba(255,255,255,0.8)'  # Semi-transparent white background
         )
     )
     
@@ -428,16 +431,25 @@ def show_fx_risk():
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Auto-refresh button
-        col_refresh, col_time = st.columns([1, 3])
+        # Auto-refresh button and controls
+        col_refresh, col_auto, col_time = st.columns([1, 1, 2])
         with col_refresh:
             if st.button("🔄 Refresh", key="refresh_fx"):
                 st.cache_data.clear()
                 st.rerun()
         
+        with col_auto:
+            auto_refresh_rates = st.checkbox("Auto 🔄", value=False, key="auto_refresh_rates", help="Auto-refresh every 30 seconds")
+        
         with col_time:
             current_time = datetime.now().strftime("%H:%M:%S")
             st.caption(f"📡 Last update: {current_time} {'(Live API)' if is_live else '(Demo Mode)'}")
+        
+        # Auto-refresh logic for FX rates (every 30 seconds to avoid being too slow)
+        if auto_refresh_rates:
+            st.info("🔄 Auto-refresh enabled (30s intervals)")
+            time.sleep(30)
+            st.rerun()
         
         # Display FX rates in grid
         fx_cols = st.columns(3)
@@ -485,7 +497,7 @@ def show_fx_risk():
             )
         
         with chart_cols[2]:
-            auto_refresh = st.checkbox("Auto Refresh", value=False, key="auto_refresh_chart")
+            auto_refresh_chart = st.checkbox("Auto Chart 🔄", value=False, key="auto_refresh_chart", help="Auto-refresh chart every 60 seconds")
         
         # Create and display the trading chart
         trading_fig = create_fx_trading_chart(selected_pair)
@@ -505,11 +517,16 @@ def show_fx_risk():
         """, unsafe_allow_html=True)
         
         with st.form("fx_deal_form"):
-            sell_currency = st.selectbox("Sell Currency", ['EUR', 'USD', 'GBP', 'CHF', 'SEK', 'NOK', 'CAD'])
-            buy_currency = st.selectbox("Buy Currency", ['USD', 'GBP', 'CHF', 'SEK', 'NOK', 'CAD', 'EUR'])
+            sell_currency = st.selectbox("Sell Currency", ['EUR', 'USD', 'GBP', 'CHF', 'SEK', 'NOK', 'CAD', 'AUD', 'MYR', 'IDR'])
+            buy_currency = st.selectbox("Buy Currency", ['USD', 'GBP', 'CHF', 'SEK', 'NOK', 'CAD', 'AUD', 'MYR', 'IDR', 'EUR'])
             amount = st.number_input("Amount", min_value=1000, value=100000, step=1000)
             contract_type = st.selectbox("Contract Type", ['Spot', 'Forward', 'Swap', 'Option'])
             value_date = st.date_input("Value Date", value=datetime.now().date())
+            
+            # Special note for SEK
+            if sell_currency == 'SEK' or buy_currency == 'SEK':
+                st.warning("⚠️ SEK Trading: Historically challenging rates - proceed with caution")
+            
             comments = st.text_area("Comments", placeholder="Optional comments...")
             
             submitted = st.form_submit_button("🚀 Submit FX Deal", use_container_width=True)
@@ -537,34 +554,46 @@ def show_fx_risk():
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         
-        # Market Status Widget
+        # Market Status Widget - Markets you actually work with
         st.markdown("""
         <div class="dashboard-section">
-            <div class="section-header">🌍 Market Status</div>
+            <div class="section-header">🌍 Trading Markets Status</div>
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Market hours logic
+        # Your actual trading markets with correct timezones
         now = datetime.now()
         markets = {
-            "🇺🇸 New York": (14, 30, 21, 0),
-            "🇬🇧 London": (8, 0, 16, 30),
-            "🇯🇵 Tokyo": (0, 0, 9, 0),
-            "🇦🇺 Sydney": (22, 0, 7, 0)
+            "🇺🇸 New York": (14, 30, 21, 0),      # 14:30-21:00 UTC (NYSE)
+            "🇬🇧 London": (8, 0, 16, 30),         # 08:00-16:30 UTC (LSE)
+            "🇲🇾 Kuala Lumpur": (1, 0, 9, 0),     # 01:00-09:00 UTC (MYR trading)
+            "🇮🇩 Jakarta": (2, 0, 9, 0),          # 02:00-09:00 UTC (IDR trading)
+            "🇨🇦 Toronto": (14, 30, 21, 0),       # 14:30-21:00 UTC (CAD trading)
+            "🇦🇺 Sydney": (22, 0, 7, 0),          # 22:00-07:00 UTC (AUD trading)
+            "🇸🇪 Stockholm": (8, 0, 16, 30),      # 08:00-16:30 UTC (SEK - your challenging currency!)
+            "🇳🇴 Oslo": (8, 0, 16, 30)            # 08:00-16:30 UTC (NOK - part of EU market)
         }
         
+        # Special highlight for SEK since you mentioned trading difficulties
         for market, (open_h, open_m, close_h, close_m) in markets.items():
             current_minutes = now.hour * 60 + now.minute
             open_minutes = open_h * 60 + open_m
             close_minutes = close_h * 60 + close_m
             
-            if market == "🇦🇺 Sydney":
+            if market in ["🇦🇺 Sydney"]:  # Sydney crosses midnight
                 is_open = now.hour >= open_h or now.hour < close_h
             else:
                 is_open = open_minutes <= current_minutes <= close_minutes
             
             status = "🟢 OPEN" if is_open else "🔴 CLOSED"
-            st.markdown(f"**{market}**: {status}")
+            
+            # Special highlighting for SEK
+            if "Stockholm" in market:
+                st.markdown(f"**{market}**: {status} ⚠️ *SEK Trading - Challenging pair*")
+            elif "Oslo" in market:
+                st.markdown(f"**{market}**: {status} ℹ️ *NOK - EU Market hours*")
+            else:
+                st.markdown(f"**{market}**: {status}")
         
         st.markdown("</div></div>", unsafe_allow_html=True)
 
