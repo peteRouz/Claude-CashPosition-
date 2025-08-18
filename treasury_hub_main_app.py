@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Treasury HUB - Premium Corporate Edition
-=======================================
-CFO-grade interface with premium visual design
-Features: Corporate design system, premium animations, executive dashboard
+Treasury HUB - Versão Consolidada
+=================================
+CFO-grade interface com dados reais do banco + FX Trading melhorado
+Features: Dados reais Excel, FX rates ao vivo, Charts profissionais, Status de mercado
 """
 
 import streamlit as st
@@ -28,569 +28,185 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Premium Corporate CSS - Executive Grade
+# Professional CSS - CFO Grade
 st.markdown("""
 <style>
-    /* Import premium fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-    
     /* Remove Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
     header {visibility: hidden;}
     
-    /* Global styles */
+    /* Custom fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
     html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-        scroll-behavior: smooth;
+        font-family: 'Inter', sans-serif;
     }
     
-    /* Remove default padding */
-    .block-container {
-        padding-top: 0rem;
-        padding-bottom: 0rem;
-        max-width: 100%;
-    }
-    
-    /* Executive Header with gradient and glassmorphism */
+    /* Executive header */
     .executive-header {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #475569 75%, #64748b 100%);
-        background-size: 400% 400%;
-        animation: gradientShift 15s ease infinite;
-        padding: 2rem 2.5rem;
+        background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%);
+        padding: 1.5rem 2rem;
         margin: -1rem -1rem 0 -1rem;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-        backdrop-filter: blur(20px);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .executive-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.03) 50%, transparent 70%);
-        pointer-events: none;
-        animation: shimmer 3s infinite;
-    }
-    
-    @keyframes gradientShift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-    
-    @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+        border-bottom: 3px solid #e2e8f0;
     }
     
     .header-content {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        max-width: 1600px;
+        max-width: 1400px;
         margin: 0 auto;
-        position: relative;
-        z-index: 2;
     }
     
     .company-brand {
         color: white;
-        font-size: 2.2rem;
-        font-weight: 800;
-        letter-spacing: -1px;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        font-size: 1.8rem;
+        font-weight: 600;
+        letter-spacing: -0.5px;
     }
     
     .company-subtitle {
-        color: #cbd5e1;
-        font-size: 0.95rem;
-        margin-top: -2px;
-        font-weight: 400;
-        opacity: 0.9;
+        color: #a0aec0;
+        font-size: 0.9rem;
+        margin-top: -5px;
     }
     
     .header-metrics {
         display: flex;
-        gap: 3rem;
+        gap: 2rem;
         color: white;
     }
     
     .header-metric {
         text-align: center;
-        background: rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 1.5rem 2rem;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .header-metric:hover {
-        transform: translateY(-2px);
-        background: rgba(255, 255, 255, 0.12);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     }
     
     .metric-value {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: #10b981;
-        text-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #68d391;
     }
     
     .metric-label {
         font-size: 0.75rem;
-        color: #e2e8f0;
+        color: #a0aec0;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-top: 0.5rem;
-        font-weight: 500;
+        letter-spacing: 0.5px;
     }
     
-    /* Navigation with glassmorphism */
-    .nav-container {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-        padding: 1rem 2.5rem;
-        margin: 0 -1rem;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-    }
-    
-    /* Dashboard sections with premium styling */
+    /* Dashboard sections */
     .dashboard-section {
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(226, 232, 240, 0.6);
-        border-radius: 20px;
-        margin: 2rem 0;
-        box-shadow: 
-            0 4px 6px -1px rgba(0, 0, 0, 0.1),
-            0 2px 4px -1px rgba(0, 0, 0, 0.06),
-            0 0 0 1px rgba(255, 255, 255, 0.05);
-        transition: all 0.3s ease;
-        overflow: hidden;
-        position: relative;
-    }
-    
-    .dashboard-section:hover {
-        transform: translateY(-1px);
-        box-shadow: 
-            0 10px 15px -3px rgba(0, 0, 0, 0.1),
-            0 4px 6px -2px rgba(0, 0, 0, 0.05),
-            0 0 0 1px rgba(255, 255, 255, 0.1);
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .section-header {
-        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-        font-weight: 700;
-        color: #1e293b;
-        font-size: 1.2rem;
+        background: #f7fafc;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 1.1rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        position: relative;
-    }
-    
-    .section-header::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
-        border-radius: 0 2px 2px 0;
     }
     
     .section-content {
-        padding: 2rem;
+        padding: 1.5rem;
     }
     
-    /* Executive summary cards with premium styling */
+    /* Executive summary cards */
     .summary-card {
-        background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.8) 100%);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(226, 232, 240, 0.6);
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: 
-            0 4px 6px -1px rgba(0, 0, 0, 0.1),
-            0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .summary-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 
-            0 10px 15px -3px rgba(0, 0, 0, 0.1),
-            0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        border-color: rgba(59, 130, 246, 0.3);
-    }
-    
-    .summary-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 50%, #3b82f6 100%);
-        background-size: 200% 100%;
-        animation: gradientMove 3s linear infinite;
-    }
-    
-    @keyframes gradientMove {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .summary-card h3 {
-        margin: 0 0 1rem 0;
+        margin: 0 0 0.5rem 0;
         font-size: 0.875rem;
-        font-weight: 600;
-        color: #64748b;
+        font-weight: 500;
+        color: #718096;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
     }
     
     .summary-value {
-        font-size: 2.5rem;
-        font-weight: 800;
-        color: #0f172a;
-        margin: 1rem 0;
-        font-family: 'JetBrains Mono', monospace;
-        line-height: 1;
+        font-size: 2rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0.5rem 0;
     }
     
     .summary-change {
-        font-size: 0.95rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
     }
     
     .change-positive {
-        color: #059669;
-        background: rgba(16, 185, 129, 0.1);
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
-        border: 1px solid rgba(16, 185, 129, 0.2);
+        color: #38a169;
     }
     
     .change-negative {
-        color: #dc2626;
-        background: rgba(239, 68, 68, 0.1);
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
-        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #e53e3e;
     }
     
     /* Status indicators */
     .status-indicator {
         display: inline-flex;
         align-items: center;
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
         font-size: 0.75rem;
-        font-weight: 600;
+        font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        backdrop-filter: blur(10px);
     }
     
     .status-good {
-        background: rgba(16, 185, 129, 0.15);
-        color: #065f46;
-        border: 1px solid rgba(16, 185, 129, 0.3);
-        box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+        background: #c6f6d5;
+        color: #22543d;
     }
     
-    .status-live {
-        background: rgba(239, 68, 68, 0.15);
-        color: #991b1b;
-        border: 1px solid rgba(239, 68, 68, 0.3);
-        box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
-    }
-    
-    /* Executive insights with premium styling */
+    /* Executive insights */
     .insight-box {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 2rem;
-        border-radius: 20px;
-        margin: 2rem 0;
-        box-shadow: 
-            0 10px 15px -3px rgba(102, 126, 234, 0.4),
-            0 4px 6px -2px rgba(102, 126, 234, 0.2);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .insight-box::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-        animation: shimmer 4s infinite;
-        pointer-events: none;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 1rem 0;
     }
     
     .insight-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        position: relative;
-        z-index: 2;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
     }
     
     .insight-content {
-        font-size: 1rem;
-        line-height: 1.6;
+        font-size: 0.9rem;
+        line-height: 1.5;
         opacity: 0.95;
-        position: relative;
-        z-index: 2;
     }
     
-    /* FX Rate Cards with premium styling */
-    .fx-rate-card {
-        background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.9) 100%);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(226, 232, 240, 0.6);
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
+    /* Remove default Streamlit padding */
+    .block-container {
+        padding-top: 0rem;
+        padding-bottom: 0rem;
     }
-    
-    .fx-rate-card:hover {
-        transform: translateY(-2px) scale(1.02);
-        border-color: rgba(59, 130, 246, 0.4);
-        box-shadow: 
-            0 10px 15px -3px rgba(0, 0, 0, 0.1),
-            0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
-    
-    .fx-rate-card.live {
-        animation: livePulse 3s ease-in-out infinite;
-    }
-    
-    @keyframes livePulse {
-        0%, 100% { 
-            border-color: rgba(226, 232, 240, 0.6);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        50% { 
-            border-color: rgba(16, 185, 129, 0.6);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-        }
-    }
-    
-    /* Button styling */
-    .stButton > button {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        font-size: 0.875rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    }
-    
-    .stButton > button:active {
-        transform: translateY(0);
-    }
-    
-    /* Form styling */
-    .stSelectbox > div > div {
-        border-radius: 12px;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        transition: all 0.3s ease;
-    }
-    
-    .stSelectbox > div > div:focus-within {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-    
-    .stTextInput > div > div > input {
-        border-radius: 12px;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        transition: all 0.3s ease;
-    }
-    
-    .stTextInput > div > div > input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-    
-    /* Homepage hero section */
-    .hero-section {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
-        background-size: 400% 400%;
-        animation: gradientShift 8s ease infinite;
-        color: white;
-        padding: 4rem 2rem;
-        border-radius: 24px;
-        margin: 2rem auto;
-        max-width: 800px;
-        text-align: center;
-        box-shadow: 
-            0 20px 25px -5px rgba(102, 126, 234, 0.4),
-            0 10px 10px -5px rgba(102, 126, 234, 0.2);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .hero-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-        animation: shimmer 5s infinite;
-        pointer-events: none;
-    }
-    
-    .hero-content {
-        position: relative;
-        z-index: 2;
-    }
-    
-    .hero-title {
-        font-size: 2.5rem;
-        font-weight: 800;
-        margin-bottom: 1rem;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    }
-    
-    .hero-subtitle {
-        font-size: 1.25rem;
-        opacity: 0.9;
-        margin-bottom: 2rem;
-        font-weight: 400;
-    }
-    
-    .feature-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-        margin-top: 2rem;
-    }
-    
-    .feature-item {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
-        padding: 1.5rem;
-        transition: all 0.3s ease;
-    }
-    
-    .feature-item:hover {
-        transform: translateY(-2px);
-        background: rgba(255, 255, 255, 0.15);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    }
-    
-    /* Loading animations */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .dashboard-section {
-        animation: fadeInUp 0.6s ease-out;
-    }
-    
-    .dashboard-section:nth-child(2) { animation-delay: 0.1s; }
-    .dashboard-section:nth-child(3) { animation-delay: 0.2s; }
-    .dashboard-section:nth-child(4) { animation-delay: 0.3s; }
-    
-    /* Responsive design */
-    @media (max-width: 768px) {
-        .header-content {
-            flex-direction: column;
-            gap: 2rem;
-        }
-        
-        .header-metrics {
-            gap: 1rem;
-        }
-        
-        .hero-title {
-            font-size: 2rem;
-        }
-        
-        .feature-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-    
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-        width: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: #f1f5f9;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+
+    /* FX Animation for live data */
+    @keyframes blink {
+        0%, 100% { border-color: #e2e8f0; }
+        50% { border-color: #00ff88; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -700,7 +316,7 @@ def generate_trading_chart_data(base_price=1.0857, days=30):
     return pd.DataFrame(ohlc_data)
 
 def create_fx_trading_chart(pair_name="EUR/USD"):
-    """Create professional trading chart with premium styling"""
+    """Create professional trading chart with WHITE background"""
     # Generate data
     chart_data = generate_trading_chart_data()
     
@@ -712,10 +328,10 @@ def create_fx_trading_chart(pair_name="EUR/USD"):
         low=chart_data['low'],
         close=chart_data['close'],
         name=pair_name,
-        increasing_line_color='#10b981',  # Premium green
-        decreasing_line_color='#ef4444',  # Premium red
-        increasing_fillcolor='#10b981',
-        decreasing_fillcolor='#ef4444'
+        increasing_line_color='#00c851',  # Green for up
+        decreasing_line_color='#ff4444',  # Red for down
+        increasing_fillcolor='#00c851',
+        decreasing_fillcolor='#ff4444'
     )])
     
     # Add moving average
@@ -725,37 +341,32 @@ def create_fx_trading_chart(pair_name="EUR/USD"):
         y=chart_data['ma_20'],
         mode='lines',
         name='MA(20)',
-        line=dict(color='#f59e0b', width=3),  # Premium orange
+        line=dict(color='#ff8800', width=2),  # Orange moving average
         opacity=0.8
     ))
     
-    # Premium styling
+    # WHITE BACKGROUND Professional styling
     fig.update_layout(
-        title=dict(
-            text=f"{pair_name} - Live Trading Chart",
-            font=dict(size=18, weight=700, color='#0f172a')
-        ),
-        height=450,
-        margin=dict(l=0, r=0, t=50, b=0),
-        plot_bgcolor='rgba(248, 250, 252, 0.8)',
-        paper_bgcolor='white',
-        font=dict(color='#334155', size=12, family='Inter'),
+        title=f"{pair_name} - Live Trading Chart",
+        height=400,
+        margin=dict(l=0, r=0, t=40, b=0),
+        plot_bgcolor='white',  # WHITE background instead of black
+        paper_bgcolor='white',  # WHITE paper background
+        font=dict(color='#2d3748', size=12),  # Dark text for readability
         xaxis=dict(
             showgrid=True,
-            gridcolor='rgba(226, 232, 240, 0.7)',
-            gridwidth=1,
+            gridcolor='#e2e8f0',  # Light gray grid
+            gridwidth=0.5,
             type='date',
             rangeslider=dict(visible=False),
-            linecolor='#e2e8f0',
-            tickfont=dict(size=11)
+            linecolor='#cbd5e0'  # Light border
         ),
         yaxis=dict(
             showgrid=True,
-            gridcolor='rgba(226, 232, 240, 0.7)',
-            gridwidth=1,
+            gridcolor='#e2e8f0',  # Light gray grid
+            gridwidth=0.5,
             side='right',
-            linecolor='#e2e8f0',
-            tickfont=dict(size=11)
+            linecolor='#cbd5e0'  # Light border
         ),
         legend=dict(
             orientation="h",
@@ -763,16 +374,13 @@ def create_fx_trading_chart(pair_name="EUR/USD"):
             y=1.02,
             xanchor="right",
             x=1,
-            bgcolor='rgba(255,255,255,0.9)',
-            bordercolor='rgba(226, 232, 240, 0.8)',
-            borderwidth=1,
-            font=dict(size=11)
+            bgcolor='rgba(255,255,255,0.8)'  # Semi-transparent white background
         )
     )
     
     return fig
 
-# Data functions with SAFE number handling (keeping existing logic)
+# Data functions with SAFE number handling (from main file)
 @st.cache_data(ttl=300)
 def get_daily_cash_flow():
     """Get daily cash flow with safe number formatting"""
@@ -1163,7 +771,7 @@ def get_bank_positions_from_tabelas():
         return get_fallback_banks()
 
 def create_professional_header():
-    """Create premium executive header"""
+    """Create header with SAFE number formatting"""
     summary = get_executive_summary()
     
     # Ensure all values are properly formatted
@@ -1198,14 +806,12 @@ def create_professional_header():
     """, unsafe_allow_html=True)
 
 def create_navigation():
-    """Create premium navigation"""
-    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
-    
+    """Create navigation"""
     nav_items = [
-        ('executive', '📊 Executive Overview'),
-        ('fx_risk', '💱 FX Risk Management'), 
-        ('investments', '📈 Investment Portfolio'),
-        ('operations', '⚙️ Daily Operations')
+        ('executive', 'Executive Overview'),
+        ('fx_risk', 'FX Risk Management'), 
+        ('investments', 'Investment Portfolio'),
+        ('operations', 'Daily Operations')
     ]
     
     cols = st.columns(len(nav_items))
@@ -1215,85 +821,41 @@ def create_navigation():
             if st.button(label, key=f"nav_{page_key}", use_container_width=True):
                 st.session_state.current_page = page_key
                 st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
 
 def show_homepage():
-    """Show premium homepage with hero section"""
-    st.markdown('<div class="section-header">🏠 Treasury Operations Center - Command Center</div>', unsafe_allow_html=True)
+    """Show homepage with just header and navigation - content area for future development"""
+    st.markdown('<div class="section-header">Treasury Operations Center - Homepage</div>', unsafe_allow_html=True)
     
-    # Hero section with premium styling
+    # Future homepage content area
     st.markdown("""
-    <div class="hero-section">
-        <div class="hero-content">
-            <div class="hero-title">Welcome to Treasury Operations Center</div>
-            <div class="hero-subtitle">Your comprehensive financial command and control center</div>
-            
-            <div class="feature-grid">
-                <div class="feature-item">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
-                    <div style="font-weight: 600; margin-bottom: 0.5rem;">Executive Overview</div>
-                    <div style="font-size: 0.9rem; opacity: 0.9;">Real-time liquidity monitoring</div>
+    <div class="dashboard-section">
+        <div class="section-content">
+            <div style="text-align: center; padding: 4rem 2rem;">
+                <h2 style="color: #2d3748; margin-bottom: 1rem;">Welcome to Treasury Operations Center</h2>
+                <p style="color: #718096; font-size: 1.1rem; margin-bottom: 2rem;">
+                    Your comprehensive financial command and control center
+                </p>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 12px; margin: 2rem auto; max-width: 600px;">
+                    <h3 style="margin-bottom: 1rem;">Quick Access</h3>
+                    <p style="margin-bottom: 1.5rem; opacity: 0.9;">Navigate to your treasury modules using the buttons above</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+                        <div>📊 Executive Overview</div>
+                        <div>💱 FX Risk Management</div>
+                        <div>📈 Investment Portfolio</div>
+                        <div>⚙️ Daily Operations</div>
+                    </div>
                 </div>
-                <div class="feature-item">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">💱</div>
-                    <div style="font-weight: 600; margin-bottom: 0.5rem;">FX Risk Management</div>
-                    <div style="font-size: 0.9rem; opacity: 0.9;">Live trading & market data</div>
-                </div>
-                <div class="feature-item">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📈</div>
-                    <div style="font-weight: 600; margin-bottom: 0.5rem;">Investment Portfolio</div>
-                    <div style="font-size: 0.9rem; opacity: 0.9;">Portfolio tracking & analytics</div>
-                </div>
-                <div class="feature-item">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚙️</div>
-                    <div style="font-weight: 600; margin-bottom: 0.5rem;">Daily Operations</div>
-                    <div style="font-size: 0.9rem; opacity: 0.9;">Workflows & transfers</div>
-                </div>
+                <p style="color: #a0aec0; font-size: 0.9rem; margin-top: 2rem;">
+                    <em>Homepage content area - Ready for future customization</em>
+                </p>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Quick stats dashboard for homepage
-    col1, col2, col3 = st.columns(3)
-    
-    summary = get_executive_summary()
-    cash_flow = get_daily_cash_flow()
-    variation = get_latest_variation()
-    
-    with col1:
-        st.markdown(f"""
-        <div class="summary-card">
-            <h3>💰 Current Liquidity</h3>
-            <div class="summary-value">EUR {summary['total_liquidity']:.1f}M</div>
-            <div class="summary-change change-positive">Across {summary['active_banks']} banks</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        percentage_class = "change-positive" if cash_flow['percentage_color'] == 'positive' else "change-negative"
-        st.markdown(f"""
-        <div class="summary-card">
-            <h3>📈 Daily Cash Flow</h3>
-            <div class="summary-value">{cash_flow['cash_flow_text']}</div>
-            <div class="summary-change {percentage_class}">{cash_flow['percentage_text']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        change_class = "change-positive" if variation['color'] == 'positive' else "change-negative"
-        st.markdown(f"""
-        <div class="summary-card">
-            <h3>📊 Portfolio Change</h3>
-            <div class="summary-value">EUR {abs(variation['variation']):,.0f}</div>
-            <div class="summary-change {change_class}">{variation['text']}</div>
-        </div>
-        """, unsafe_allow_html=True)
 
 def show_executive_overview():
-    """Show executive overview with premium styling"""
-    st.markdown('<div class="section-header">📊 Executive Summary</div>', unsafe_allow_html=True)
+    """Show executive overview with SAFE formatting"""
+    st.markdown('<div class="section-header">Executive Summary</div>', unsafe_allow_html=True)
     
     # Get data safely
     summary = get_executive_summary()
@@ -1307,27 +869,27 @@ def show_executive_overview():
         
         st.markdown(f"""
         <div class="summary-card">
-            <h3>💰 Total Liquidity</h3>
+            <h3>Total Liquidity</h3>
             <div class="summary-value">EUR {summary['total_liquidity']:.1f}M</div>
-            <div class="summary-change {change_class}">📈 {variation['text']}</div>
+            <div class="summary-change {change_class}">{variation['text']}</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown(f"""
         <div class="summary-card">
-            <h3>💵 Inflow</h3>
+            <h3>Inflow</h3>
             <div class="summary-value">EUR 0</div>
-            <div class="summary-change change-positive">⚙️ To be configured</div>
+            <div class="summary-change change-positive">To be configured</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown(f"""
         <div class="summary-card">
-            <h3>💸 Outflow</h3>
+            <h3>Outflow</h3>
             <div class="summary-value">EUR 0</div>
-            <div class="summary-change change-positive">⚙️ To be configured</div>
+            <div class="summary-change change-positive">To be configured</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -1336,9 +898,9 @@ def show_executive_overview():
         
         st.markdown(f"""
         <div class="summary-card">
-            <h3>📊 Daily Cash Flow</h3>
+            <h3>Daily Cash Flow</h3>
             <div class="summary-value">{cash_flow['cash_flow_text']}</div>
-            <div class="summary-change {percentage_class}">📈 {cash_flow['percentage_text']}</div>
+            <div class="summary-change {percentage_class}">{cash_flow['percentage_text']}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -1349,8 +911,8 @@ def show_executive_overview():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">
-                📈 Liquidity Trend (Dynamic)
-                <span class="status-indicator status-good">✅ Healthy</span>
+                Liquidity Trend (Dynamic)
+                <span class="status-indicator status-good">Healthy</span>
             </div>
             <div class="section-content">
         """, unsafe_allow_html=True)
@@ -1359,31 +921,32 @@ def show_executive_overview():
             liquidity_data = get_dynamic_liquidity_data()
             
             if liquidity_data['source'].startswith('Sample'):
-                st.warning("⚠️ Using sample data - Excel not found or error in reading")
+                st.warning("Warning: Using sample data - Excel not found or error in reading")
+                with st.expander("Debug Info"):
+                    st.write("Trying to read from: TREASURY DASHBOARD.xlsx, sheet 'Lista contas'")
+                    st.write("Verify if file exists and sheet name is correct")
             
-            # Premium chart styling
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=liquidity_data['dates'],
                 y=liquidity_data['values'],
                 mode='lines',
                 name='Total Liquidity',
-                line=dict(color='#3b82f6', width=4),
+                line=dict(color='#2b6cb0', width=3),
                 fill='tonexty',
-                fillcolor='rgba(59, 130, 246, 0.1)',
+                fillcolor='rgba(43, 108, 176, 0.1)',
                 hovertemplate='<b>%{x|%d %b %Y}</b><br>EUR %{y:.1f}M<extra></extra>'
             ))
             
             fig.update_layout(
-                height=350,
+                height=300,
                 margin=dict(l=0, r=0, t=20, b=0),
-                plot_bgcolor='rgba(248, 250, 252, 0.8)',
+                plot_bgcolor='white',
                 paper_bgcolor='white',
                 showlegend=False,
-                font=dict(color='#334155', size=12, family='Inter'),
                 xaxis=dict(
-                    showgrid=True,
-                    gridcolor='rgba(226, 232, 240, 0.7)',
+                    showgrid=False,
+                    gridcolor='#f1f5f9',
                     tickformat='%d %b',
                     tickmode='array',
                     tickvals=liquidity_data['dates'],
@@ -1393,7 +956,7 @@ def show_executive_overview():
                 ),
                 yaxis=dict(
                     showgrid=True, 
-                    gridcolor='rgba(226, 232, 240, 0.7)', 
+                    gridcolor='#f1f5f9', 
                     title='Million EUR',
                     range=[0, 80],
                     tickvals=[0, 10, 20, 30, 40, 50, 60, 70, 80],
@@ -1403,64 +966,75 @@ def show_executive_overview():
             
             st.plotly_chart(fig, use_container_width=True)
             
-            st.caption(f"📊 Data: {liquidity_data['source']} • Latest: EUR {liquidity_data['values'][-1]:.1f}M • {len(liquidity_data['dates'])} days")
+            if 'columns_found' in liquidity_data:
+                st.caption(f"Data: {liquidity_data['source']} • Columns found: {', '.join(liquidity_data['columns_found'])} • Latest: EUR {liquidity_data['values'][-1]:.1f}M")
+            else:
+                st.caption(f"Data: {liquidity_data['source']} • {len(liquidity_data['dates'])} days • Latest: EUR {liquidity_data['values'][-1]:.1f}M")
             
         except Exception as e:
             st.error(f"Error loading chart: {e}")
+            # Fallback chart
+            dates = pd.date_range(start=datetime.now() - timedelta(days=7), periods=7, freq='D')
+            values = [28.5, 30.2, 31.8, 29.4, 32.1, 31.7, 32.6]
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=dates, y=values, mode='lines', line=dict(color='#2b6cb0', width=3)))
+            fig.update_layout(height=300, margin=dict(l=0, r=0, t=20, b=0), yaxis=dict(range=[0, 80]))
+            st.plotly_chart(fig, use_container_width=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
         <div class="dashboard-section">
-            <div class="section-header">🏦 Cash Positions</div>
+            <div class="section-header">Cash Positions</div>
             <div class="section-content" style="padding: 0;">
         """, unsafe_allow_html=True)
         
         banks_df = get_bank_positions_from_tabelas()
         
         banks_html = """
-        <div style="height: 350px; overflow-y: auto; padding: 1.5rem; font-family: 'Inter', sans-serif;">
+        <div style="height: 300px; overflow-y: auto; padding: 1.5rem; font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;">
         """
         
         for _, row in banks_df.iterrows():
             banks_html += f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; margin-bottom: 0.5rem; background: rgba(248, 250, 252, 0.8); border-radius: 12px; border: 1px solid rgba(226, 232, 240, 0.6); transition: all 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
                 <div>
-                    <div style="font-weight: 700; color: #0f172a; font-size: 1rem;">{row['Bank']}</div>
-                    <div style="font-weight: 500; color: #64748b; font-size: 0.85rem;">{row['Currency']} • {row['Yield']}</div>
+                    <div style="font-weight: 700; color: #262730; font-size: 0.95rem;">{row['Bank']}</div>
+                    <div style="font-weight: 400; color: #8e8ea0; font-size: 0.8rem;">{row['Currency']} • {row['Yield']}</div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-weight: 700; color: #0f172a; font-family: 'JetBrains Mono', monospace;">EUR {row['Balance']:.1f}M</div>
+                    <div style="font-weight: 700; color: #262730;">EUR {row['Balance']:.1f}M</div>
                 </div>
             </div>
             """
         
         banks_html += "</div>"
         
-        st.components.v1.html(banks_html, height=350, scrolling=True)
+        st.components.v1.html(banks_html, height=300, scrolling=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # Executive insights with premium styling
+    # Executive insights
     st.markdown(f"""
     <div class="insight-box">
-        <div class="insight-title">🎯 Executive Insight</div>
+        <div class="insight-title">Executive Insight</div>
         <div class="insight-content">
             Current liquidity position at EUR {summary['total_liquidity']:.1f}M across {summary['active_banks']} banking relationships.
             Portfolio diversification optimized with {summary['bank_accounts']} active accounts.
-            Top 5 banks represent 65% of total liquidity, ensuring balanced concentration risk management.
+            Top 5 banks represent 65% of total liquidity, ensuring balanced concentration risk.
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 def show_fx_risk():
-    """Enhanced FX Risk Management with premium styling"""
+    """Enhanced FX Risk Management with live data and charts (from FX.py)"""
     if st.button("🏠 Back to Home", key="back_home_fx"):
         st.session_state.current_page = 'overview'
         st.rerun()
     
-    st.markdown('<div class="section-header">💱 FX Risk Management - Live Trading</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">FX Risk Management - Live Trading</div>', unsafe_allow_html=True)
     
     # Get live FX data
     fx_rates, is_live = get_live_fx_rates()
@@ -1471,20 +1045,19 @@ def show_fx_risk():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        # Live FX Rates Section with premium styling
-        status_indicator = "🔴 LIVE" if is_live else "🟡 DEMO"
-        status_class = "status-live" if is_live else "status-good"
+        # Live FX Rates Section
+        status_indicator = "🟢 LIVE" if is_live else "🟡 DEMO"
         
         st.markdown(f"""
         <div class="dashboard-section">
             <div class="section-header">
-                💹 Live FX Rates vs EUR
-                <span class="status-indicator {status_class}">{status_indicator}</span>
+                Live FX Rates vs EUR
+                <span class="status-indicator status-good">{status_indicator}</span>
             </div>
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Auto-refresh controls with premium styling
+        # Auto-refresh button and controls
         col_refresh, col_auto, col_time = st.columns([1, 1, 2])
         with col_refresh:
             if st.button("🔄 Refresh", key="refresh_fx"):
@@ -1498,34 +1071,42 @@ def show_fx_risk():
             current_time = datetime.now().strftime("%H:%M:%S")
             st.caption(f"📡 Last update: {current_time} {'(Live API)' if is_live else '(Demo Mode)'}")
         
-        # Display FX rates with premium cards
+        # Auto-refresh logic for FX rates (every 30 seconds to avoid being too slow)
+        if auto_refresh_rates:
+            st.info("🔄 Auto-refresh enabled (30s intervals)")
+            time.sleep(30)
+            st.rerun()
+        
+        # Display FX rates in grid
         fx_cols = st.columns(3)
         for i, (pair, data) in enumerate(fx_rates.items()):
             with fx_cols[i % 3]:
                 color_class = "change-positive" if data['color'] == 'positive' else "change-negative"
-                live_class = "live" if is_live else ""
+                
+                # Add blinking effect for live data
+                blink_style = "animation: blink 2s infinite;" if is_live else ""
                 
                 st.markdown(f"""
-                <div class="fx-rate-card {live_class}">
-                    <div style="font-size: 0.875rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">{pair}</div>
-                    <div style="font-size: 1.8rem; font-weight: 700; color: #0f172a; margin: 0.5rem 0; font-family: 'JetBrains Mono', monospace;">{data['rate']:.4f}</div>
-                    <div class="{color_class}" style="font-size: 0.875rem; font-weight: 600;">📈 {data['change_text']}</div>
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; {blink_style}">
+                    <div style="font-size: 0.875rem; color: #718096; font-weight: 500;">{pair}</div>
+                    <div style="font-size: 1.5rem; font-weight: 600; color: #2d3748; margin: 0.5rem 0;">{data['rate']:.4f}</div>
+                    <div class="{color_class}" style="font-size: 0.875rem; font-weight: 500;">{data['change_text']}</div>
                 </div>
                 """, unsafe_allow_html=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         
-        # TRADING CHART SECTION with premium styling
+        # TRADING CHART SECTION
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">
                 📈 Live Trading Charts
-                <span class="status-indicator status-good">✅ Professional</span>
+                <span class="status-indicator status-good">Professional</span>
             </div>
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Chart controls
+        # Chart selector
         chart_cols = st.columns([2, 1, 1])
         with chart_cols[0]:
             selected_pair = st.selectbox(
@@ -1542,9 +1123,9 @@ def show_fx_risk():
             )
         
         with chart_cols[2]:
-            auto_refresh_chart = st.checkbox("Auto Chart 🔄", value=False, key="auto_refresh_chart")
+            auto_refresh_chart = st.checkbox("Auto Chart 🔄", value=False, key="auto_refresh_chart", help="Auto-refresh chart every 60 seconds")
         
-        # Create and display the premium trading chart
+        # Create and display the trading chart
         trading_fig = create_fx_trading_chart(selected_pair)
         st.plotly_chart(trading_fig, use_container_width=True)
         
@@ -1554,7 +1135,7 @@ def show_fx_risk():
         st.markdown("</div></div>", unsafe_allow_html=True)
     
     with col2:
-        # FX Deal Request Form with premium styling
+        # FX Deal Request Form
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">🚀 FX Deal Request</div>
@@ -1568,14 +1149,9 @@ def show_fx_risk():
             contract_type = st.selectbox("Contract Type", ['Spot', 'Forward', 'Swap', 'Option'])
             value_date = st.date_input("Value Date", value=datetime.now().date())
             
-            # Special note for SEK with premium styling
+            # Special note for SEK
             if sell_currency == 'SEK' or buy_currency == 'SEK':
-                st.markdown("""
-                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 1rem; margin: 1rem 0;">
-                    <div style="color: #dc2626; font-weight: 600;">⚠️ SEK Trading Alert</div>
-                    <div style="color: #7f1d1d; font-size: 0.875rem; margin-top: 0.5rem;">Historically challenging rates - proceed with caution</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.warning("⚠️ SEK Trading: Historically challenging rates - proceed with caution")
             
             comments = st.text_area("Comments", placeholder="Optional comments...")
             
@@ -1604,59 +1180,50 @@ def show_fx_risk():
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         
-        # Market Status Widget with premium styling
+        # Market Status Widget - Markets you actually work with
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">🌍 Trading Markets Status</div>
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Market status with premium styling
+        # Your actual trading markets with correct timezones
         now = datetime.now()
         markets = {
-            "🇺🇸 New York": (14, 30, 21, 0),
-            "🇬🇧 London": (8, 0, 16, 30),
-            "🇲🇾 Kuala Lumpur": (1, 0, 9, 0),
-            "🇮🇩 Jakarta": (2, 0, 9, 0),
-            "🇨🇦 Toronto": (14, 30, 21, 0),
-            "🇦🇺 Sydney": (22, 0, 7, 0),
-            "🇸🇪 Stockholm": (8, 0, 16, 30),
-            "🇳🇴 Oslo": (8, 0, 16, 30)
+            "🇺🇸 New York": (14, 30, 21, 0),      # 14:30-21:00 UTC (NYSE)
+            "🇬🇧 London": (8, 0, 16, 30),         # 08:00-16:30 UTC (LSE)
+            "🇲🇾 Kuala Lumpur": (1, 0, 9, 0),     # 01:00-09:00 UTC (MYR trading)
+            "🇮🇩 Jakarta": (2, 0, 9, 0),          # 02:00-09:00 UTC (IDR trading)
+            "🇨🇦 Toronto": (14, 30, 21, 0),       # 14:30-21:00 UTC (CAD trading)
+            "🇦🇺 Sydney": (22, 0, 7, 0),          # 22:00-07:00 UTC (AUD trading)
+            "🇸🇪 Stockholm": (8, 0, 16, 30),      # 08:00-16:30 UTC (SEK - your challenging currency!)
+            "🇳🇴 Oslo": (8, 0, 16, 30)            # 08:00-16:30 UTC (NOK - part of EU market)
         }
         
+        # Special highlight for SEK since you mentioned trading difficulties
         for market, (open_h, open_m, close_h, close_m) in markets.items():
             current_minutes = now.hour * 60 + now.minute
             open_minutes = open_h * 60 + open_m
             close_minutes = close_h * 60 + close_m
             
-            if market in ["🇦🇺 Sydney"]:
+            if market in ["🇦🇺 Sydney"]:  # Sydney crosses midnight
                 is_open = now.hour >= open_h or now.hour < close_h
             else:
                 is_open = open_minutes <= current_minutes <= close_minutes
             
-            status_color = "#10b981" if is_open else "#ef4444"
-            status_bg = "rgba(16, 185, 129, 0.1)" if is_open else "rgba(239, 68, 68, 0.1)"
-            status_text = "🟢 OPEN" if is_open else "🔴 CLOSED"
+            status = "🟢 OPEN" if is_open else "🔴 CLOSED"
             
-            special_note = ""
+            # Special highlighting for SEK
             if "Stockholm" in market:
-                special_note = " ⚠️ SEK Trading - Challenging pair"
+                st.markdown(f"**{market}**: {status} ⚠️ *SEK Trading - Challenging pair*")
             elif "Oslo" in market:
-                special_note = " ℹ️ NOK - EU Market hours"
-            
-            st.markdown(f"""
-            <div style="background: {status_bg}; border: 1px solid {status_color}33; border-radius: 12px; padding: 1rem; margin: 0.5rem 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="font-weight: 600; color: #0f172a;">{market}</div>
-                    <div style="color: {status_color}; font-weight: 600; font-size: 0.875rem;">{status_text}</div>
-                </div>
-                {f'<div style="color: #64748b; font-size: 0.8rem; margin-top: 0.25rem;">{special_note}</div>' if special_note else ''}
-            </div>
-            """, unsafe_allow_html=True)
+                st.markdown(f"**{market}**: {status} ℹ️ *NOK - EU Market hours*")
+            else:
+                st.markdown(f"**{market}**: {status}")
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # Pending FX Deals with premium styling
+    # Pending FX Deals
     if st.session_state.fx_deals:
         st.markdown("""
         <div class="dashboard-section">
@@ -1666,25 +1233,21 @@ def show_fx_risk():
         
         for deal in st.session_state.fx_deals:
             if deal['status'] == 'Pending':
-                st.markdown(f"""
-                <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 16px; padding: 1.5rem; margin: 1rem 0;">
-                """, unsafe_allow_html=True)
-                
                 col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
                 
                 with col1:
-                    st.markdown(f"**💱 {deal['sell_currency']}/{deal['buy_currency']}**")
-                    st.markdown(f"Amount: EUR {deal['amount']:,}")
+                    st.write(f"**{deal['sell_currency']}/{deal['buy_currency']}**")
+                    st.write(f"Amount: {deal['amount']:,}")
                 
                 with col2:
-                    st.markdown(f"Type: **{deal['contract_type']}**")
-                    st.markdown(f"Value Date: {deal['value_date']}")
+                    st.write(f"Type: {deal['contract_type']}")
+                    st.write(f"Value Date: {deal['value_date']}")
                 
                 with col3:
-                    st.markdown(f"Requested: {deal['timestamp']}")
-                    st.markdown(f"By: **{deal['user']}**")
+                    st.write(f"Requested: {deal['timestamp']}")
+                    st.write(f"By: {deal['user']}")
                     if 'rate_type' in deal:
-                        st.markdown(f"Rate: {deal['rate_type']}")
+                        st.write(f"Rate: {deal['rate_type']}")
                 
                 with col4:
                     if st.button("✅ Approve", key=f"approve_{deal['id']}"):
@@ -1699,17 +1262,17 @@ def show_fx_risk():
                         st.error("Deal rejected!")
                         st.rerun()
                 
-                st.markdown("</div>", unsafe_allow_html=True)
+                st.divider()
         
         st.markdown("</div></div>", unsafe_allow_html=True)
 
 def show_daily_operations():
-    """Show Daily Operations with premium styling"""
+    """Show Daily Operations dashboard"""
     if st.button("🏠 Back to Home", key="back_home_operations"):
         st.session_state.current_page = 'overview'
         st.rerun()
     
-    st.markdown('<div class="section-header">⚙️ Daily Operations Center</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Daily Operations Center</div>', unsafe_allow_html=True)
     
     # Initialize session states
     if 'operational_workflows' not in st.session_state:
@@ -1750,27 +1313,25 @@ def show_daily_operations():
                 st.success("Workflow added successfully!")
                 st.rerun()
         
-        # Display Workflows with premium styling
+        # Display Workflows
         if st.session_state.operational_workflows:
             st.markdown("**Active Workflows:**")
             
             for workflow in st.session_state.operational_workflows:
-                status_color = "#f59e0b" if workflow['status'] == 'Pending' else "#10b981"
-                status_bg = "rgba(245, 158, 11, 0.1)" if workflow['status'] == 'Pending' else "rgba(16, 185, 129, 0.1)"
-                
                 col_a, col_b, col_c = st.columns([3, 1, 1])
                 
                 with col_a:
+                    tooltip_text = f"Notes: {workflow['notes']}\nCreated: {workflow['created']}"
+                    
                     st.markdown(f"""
-                    <div style="background: {status_bg}; border: 1px solid {status_color}33; border-radius: 12px; padding: 1rem; margin: 0.5rem 0;">
-                        <div style="font-weight: 600; color: #0f172a;">{workflow['subject']}</div>
-                        <div style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">{workflow['date']}</div>
-                        {f'<div style="color: #64748b; font-size: 0.8rem; margin-top: 0.25rem;">Notes: {workflow["notes"]}</div>' if workflow['notes'] else ''}
+                    <div style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid {'#ffc107' if workflow['status'] == 'Pending' else '#28a745'};" title="{tooltip_text}">
+                        <strong>{workflow['subject']}</strong><br>
+                        <small style="color: #6c757d;">{workflow['date']}</small>
                     </div>
                     """, unsafe_allow_html=True)
                 
                 with col_b:
-                    st.markdown(f"**{workflow['status']}**")
+                    st.write(f"**{workflow['status']}**")
                 
                 with col_c:
                     if workflow['status'] == 'Pending':
@@ -1798,9 +1359,16 @@ def show_daily_operations():
         """, unsafe_allow_html=True)
         
         companies = [
-            "Holding Company Ltd", "Operations Co", "European Subsidiary",
-            "North America Inc", "Asia Pacific Ltd", "Treasury Center",
-            "Investment Vehicle", "Trading Entity", "Service Company", "Technology Division"
+            "Holding Company Ltd",
+            "Operations Co",
+            "European Subsidiary",
+            "North America Inc", 
+            "Asia Pacific Ltd",
+            "Treasury Center",
+            "Investment Vehicle",
+            "Trading Entity",
+            "Service Company",
+            "Technology Division"
         ]
         
         with st.form("transfer_form", clear_on_submit=True):
@@ -1827,16 +1395,16 @@ def show_daily_operations():
                 else:
                     st.error("From and To companies must be different!")
         
-        # Display Transfers with premium styling
+        # Display Transfers
         if st.session_state.intraday_transfers:
             st.markdown("**Recent Transfers:**")
             
             recent_transfers = st.session_state.intraday_transfers[-5:]
             for transfer in reversed(recent_transfers):
                 st.markdown(f"""
-                <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 1rem; margin: 0.5rem 0;">
-                    <div style="font-weight: 600; color: #0f172a;">{transfer['from_company']} → {transfer['to_company']}</div>
-                    <div style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">EUR {transfer['amount']:,} • {transfer['date']}</div>
+                <div style="background: #e8f4fd; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid #007bff;">
+                    <strong>{transfer['from_company']} → {transfer['to_company']}</strong><br>
+                    <small>EUR {transfer['amount']:,} • {transfer['date']}</small>
                 </div>
                 """, unsafe_allow_html=True)
         else:
@@ -1844,29 +1412,492 @@ def show_daily_operations():
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # Continue with the rest of the operations (P-Card requests, etc.) using similar premium styling...
-    # For brevity, I'll include the key sections
+    # MIDDLE ROW: Cashflow vs Actuals Chart
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">📊 Cashflow vs Actuals</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    st.info("📌 Chart placeholder - You can paste your Python chart code here!")
+    
+    sample_data = {
+        'Categories': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        'Forecast': [2.5, 3.2, 2.8, 4.1],
+        'Actual': [2.8, 2.9, 3.1, 3.8]
+    }
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        name='Forecast',
+        x=sample_data['Categories'],
+        y=sample_data['Forecast'],
+        marker_color='lightblue'
+    ))
+    fig.add_trace(go.Bar(
+        name='Actual',
+        x=sample_data['Categories'],
+        y=sample_data['Actual'],
+        marker_color='darkblue'
+    ))
+    
+    fig.update_layout(
+        height=250,
+        margin=dict(l=0, r=0, t=20, b=0),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        barmode='group',
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        yaxis=dict(title='Million EUR')
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    st.caption("💡 Replace this with your cashflow chart code")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # BOTTOM ROW: P-Card Requests
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">💳 P-Card Requests</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.markdown("**Manual Entry** (Future: AI Agent)")
+        
+        with st.form("pcard_form", clear_on_submit=True):
+            requester_name = st.text_input("Requester Name", placeholder="John Doe")
+            requested_amount = st.number_input("Amount Requested (EUR)", min_value=1, value=500, step=50)
+            request_reason = st.text_area("Reason", placeholder="Business purpose...", height=60)
+            
+            pcard_submitted = st.form_submit_button("📨 Add Request", use_container_width=True)
+            
+            if pcard_submitted and requester_name.strip():
+                new_request = {
+                    'id': len(st.session_state.pcard_requests) + 1,
+                    'requester': requester_name.strip(),
+                    'amount': requested_amount,
+                    'reason': request_reason.strip(),
+                    'status': 'Pending',
+                    'card_number': '',
+                    'request_date': datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.pcard_requests.append(new_request)
+                st.success("P-Card request added!")
+                st.rerun()
+    
+    with col2:
+        st.markdown("**Pending Requests**")
+        
+        if st.session_state.pcard_requests:
+            for request in st.session_state.pcard_requests:
+                if request['status'] == 'Pending':
+                    col_a, col_b, col_c = st.columns([2, 1, 1])
+                    
+                    with col_a:
+                        st.markdown(f"""
+                        <div style="background: #fff3cd; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid #ffc107;">
+                            <strong>{request['requester']}</strong><br>
+                            <small>EUR {request['amount']} • {request['reason'][:30]}{'...' if len(request['reason']) > 30 else ''}</small><br>
+                            <small style="color: #6c757d;">{request['request_date']}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with col_b:
+                        card_number = st.text_input("Card #", key=f"card_{request['id']}", placeholder="1234-5678")
+                    
+                    with col_c:
+                        if st.button("✅ Send", key=f"approve_card_{request['id']}"):
+                            if card_number.strip():
+                                for r in st.session_state.pcard_requests:
+                                    if r['id'] == request['id']:
+                                        r['status'] = 'Approved'
+                                        r['card_number'] = card_number.strip()
+                                st.success(f"Card number sent to {request['requester']}!")
+                                st.rerun()
+                            else:
+                                st.error("Please enter card number!")
+                
+                elif request['status'] == 'Approved':
+                    st.markdown(f"""
+                    <div style="background: #d4edda; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid #28a745;">
+                        <strong>✅ {request['requester']}</strong> - Card #{request['card_number']} sent<br>
+                        <small>EUR {request['amount']} • {request['request_date']}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.info("No P-Card requests yet.")
+        
+        st.markdown("""
+        <div style="background: #e2e3e5; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+            <strong>🤖 Future Enhancement:</strong><br>
+            <small>AI Agent will automatically read emails and populate requests here. 
+            Integration with email parsing for automatic requester detection and amount extraction.</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
 def show_investment_portfolio():
-    """Show Investment Portfolio with premium styling"""
+    """Show Investment Portfolio dashboard with tracking functionality"""
     if st.button("🏠 Back to Home", key="back_home_investments"):
         st.session_state.current_page = 'overview'
         st.rerun()
     
-    st.markdown('<div class="section-header">📈 Investment Portfolio Tracking</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Investment Portfolio Tracking</div>', unsafe_allow_html=True)
     
     # Initialize session state for investments
     if 'investment_transactions' not in st.session_state:
         st.session_state.investment_transactions = []
     
-    # Similar premium styling implementation for investment portfolio...
-    st.info("💎 Investment Portfolio with premium styling - Implementation continues...")
+    # TOP ROW: Transaction Form + Summary Cards
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">📝 Add Investment Transaction</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Investment Transaction Form
+        with st.form("investment_form", clear_on_submit=True):
+            transaction_date = st.date_input("Date", value=datetime.now().date())
+            
+            transaction_type = st.selectbox("Type", [
+                "Deposit",
+                "Interest", 
+                "Redemption",
+                "Account Balance Update"
+            ])
+            
+            from_entity = st.selectbox("From", [
+                "Group Holding",
+                "Treasury Center",
+                "Investment Account",
+                "MMF",
+                "TD",
+                "External Source"
+            ])
+            
+            to_entity = st.selectbox("To", [
+                "MMF",
+                "TD", 
+                "Account",
+                "Group Holding",
+                "Treasury Center",
+                "External Destination"
+            ])
+            
+            amount = st.number_input("Amount (EUR)", min_value=0.01, value=1000.00, step=100.00)
+            
+            notes = st.text_area("Notes (Optional)", placeholder="Additional transaction details...", height=60)
+            
+            submitted = st.form_submit_button("💰 Add Transaction", use_container_width=True)
+            
+            if submitted:
+                new_transaction = {
+                    'id': len(st.session_state.investment_transactions) + 1,
+                    'date': transaction_date.strftime("%Y-%m-%d"),
+                    'type': transaction_type,
+                    'from': from_entity,
+                    'to': to_entity,
+                    'amount': float(amount),
+                    'notes': notes.strip(),
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.investment_transactions.append(new_transaction)
+                st.success(f"{transaction_type} of EUR {amount:,.2f} added successfully!")
+                st.rerun()
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    with col2:
+        # Calculate summary metrics
+        transactions = st.session_state.investment_transactions
+        
+        # Current Balances: (Deposits + Interest + Updates) - Redemptions
+        deposits = sum(t['amount'] for t in transactions if t['type'] == 'Deposit')
+        interests = sum(t['amount'] for t in transactions if t['type'] == 'Interest')
+        updates = sum(t['amount'] for t in transactions if t['type'] == 'Account Balance Update')
+        redemptions = sum(t['amount'] for t in transactions if t['type'] == 'Redemption')
+        
+        current_balance = deposits + interests + updates - redemptions
+        interest_earned = interests
+        
+        # Summary Cards
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">💰 Portfolio Summary</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Current Balances Card
+        st.markdown(f"""
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #007bff;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.2rem; margin-right: 0.5rem;">🏛️</span>
+                <span style="font-weight: 600; color: #495057;">Current Balances</span>
+            </div>
+            <div style="font-size: 2rem; font-weight: 700; color: #2d3748;">EUR {current_balance:,.2f}</div>
+            <div style="font-size: 0.9rem; color: #6c757d; margin-top: 0.5rem;">
+                Deposits: EUR {deposits:,.2f} | Updates: EUR {updates:,.2f} | Redemptions: EUR {redemptions:,.2f}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Interest Earned Card
+        st.markdown(f"""
+        <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #ffc107;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.2rem; margin-right: 0.5rem;">🟡</span>
+                <span style="font-weight: 600; color: #495057;">Interest Earned</span>
+            </div>
+            <div style="font-size: 2rem; font-weight: 700; color: #2d3748;">EUR {interest_earned:,.2f}</div>
+            <div style="font-size: 0.9rem; color: #6c757d; margin-top: 0.5rem;">
+                Total interest payments received
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # MIDDLE ROW: Total Value Summary Table
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">📋 Investment Summary by Product</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    if transactions:
+        # Calculate balances by product (To field)
+        product_summary = {}
+        
+        for transaction in transactions:
+            product = transaction['to']
+            if product not in product_summary:
+                product_summary[product] = {
+                    'deposits': 0,
+                    'interest': 0,
+                    'updates': 0,
+                    'redemptions': 0,
+                    'last_activity': transaction['date']
+                }
+            
+            # Update amounts by type
+            if transaction['type'] == 'Deposit':
+                product_summary[product]['deposits'] += transaction['amount']
+            elif transaction['type'] == 'Interest':
+                product_summary[product]['interest'] += transaction['amount']
+            elif transaction['type'] == 'Account Balance Update':
+                product_summary[product]['updates'] += transaction['amount']
+            elif transaction['type'] == 'Redemption':
+                product_summary[product]['redemptions'] += transaction['amount']
+            
+            # Update last activity (keep most recent)
+            if transaction['date'] > product_summary[product]['last_activity']:
+                product_summary[product]['last_activity'] = transaction['date']
+        
+        # Create summary table
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
+        
+        with col1:
+            st.markdown("**Product**")
+        with col2:
+            st.markdown("**Current Balance**")
+        with col3:
+            st.markdown("**Accrued Interest**")
+        with col4:
+            st.markdown("**Last Activity**")
+        
+        st.markdown("---")
+        
+        # Display each product
+        for product, data in product_summary.items():
+            if product in ['MMF', 'TD', 'Account']:  # Only show investment products
+                current_balance = data['deposits'] + data['interest'] + data['updates'] - data['redemptions']
+                accrued_interest = data['interest']
+                last_activity = data['last_activity']
+                
+                col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
+                
+                with col1:
+                    if product == 'MMF':
+                        st.markdown("**💰 MMF**")
+                    elif product == 'TD':
+                        st.markdown("**🏦 TD**")
+                    else:
+                        st.markdown(f"**📊 {product}**")
+                
+                with col2:
+                    st.markdown(f"EUR {current_balance:,.2f}")
+                
+                with col3:
+                    st.markdown(f"EUR {accrued_interest:,.2f}")
+                
+                with col4:
+                    formatted_date = datetime.strptime(last_activity, "%Y-%m-%d").strftime("%d/%m/%Y")
+                    st.markdown(f"{formatted_date}")
+                
+                st.markdown("---")
+    
+    else:
+        st.info("No investment transactions recorded yet. Add your first transaction above!")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # BOTTOM ROW: Investment Growth Chart
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">📈 Total Value Growth</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    if transactions:
+        # Calculate cumulative value over time
+        # Sort transactions by date
+        sorted_transactions = sorted(transactions, key=lambda x: x['date'])
+        
+        dates = []
+        cumulative_values = []
+        running_total = 0
+        
+        for transaction in sorted_transactions:
+            transaction_date = datetime.strptime(transaction['date'], "%Y-%m-%d")
+            
+            # Add/subtract based on transaction type
+            if transaction['type'] in ['Deposit', 'Interest', 'Account Balance Update']:
+                running_total += transaction['amount']
+            elif transaction['type'] == 'Redemption':
+                running_total -= transaction['amount']
+            
+            dates.append(transaction_date)
+            cumulative_values.append(running_total)
+        
+        # Create the growth chart
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
+            x=dates,
+            y=cumulative_values,
+            mode='lines+markers',
+            name='Total Investment Value',
+            line=dict(color='#007bff', width=3),
+            fill='tonexty',
+            fillcolor='rgba(0, 123, 255, 0.1)',
+            marker=dict(size=6, color='#007bff'),
+            hovertemplate='<b>%{x|%d %b %Y}</b><br>EUR %{y:,.2f}<extra></extra>'
+        ))
+        
+        fig.update_layout(
+            height=350,
+            margin=dict(l=0, r=0, t=20, b=0),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            showlegend=False,
+            xaxis=dict(
+                title='Date',
+                showgrid=True,
+                gridcolor='#f1f5f9',
+                tickformat='%d %b'
+            ),
+            yaxis=dict(
+                title='EUR',
+                showgrid=True,
+                gridcolor='#f1f5f9',
+                tickformat=',.0f'
+            )
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Chart summary
+        if cumulative_values:
+            total_growth = cumulative_values[-1] - cumulative_values[0] if len(cumulative_values) > 1 else cumulative_values[0]
+            growth_percentage = (total_growth / cumulative_values[0] * 100) if cumulative_values[0] != 0 else 0
+            
+            st.caption(f"📊 Portfolio Growth: EUR {total_growth:,.2f} ({growth_percentage:+.1f}%) • Latest Value: EUR {cumulative_values[-1]:,.2f} • Transactions: {len(transactions)}")
+    
+    else:
+        # Show placeholder chart
+        st.info("📈 Investment growth chart will appear here once you add transactions")
+        
+        # Sample chart to show structure
+        sample_dates = pd.date_range(start=datetime.now() - timedelta(days=90), periods=10, freq='10D')
+        sample_values = [3000, 3200, 3150, 3400, 3600, 3800, 4100, 4050, 4300, 4500]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=sample_dates,
+            y=sample_values,
+            mode='lines',
+            name='Sample Growth',
+            line=dict(color='#28a745', width=2, dash='dash'),
+            opacity=0.6
+        ))
+        
+        fig.update_layout(
+            height=350,
+            margin=dict(l=0, r=0, t=20, b=0),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            showlegend=False,
+            xaxis=dict(title='Date', showgrid=True, gridcolor='#f1f5f9'),
+            yaxis=dict(title='EUR', showgrid=True, gridcolor='#f1f5f9')
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("💡 Sample chart - Add your investment transactions to see real growth")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # Transaction History (Optional - can be expandable)
+    if transactions:
+        with st.expander(f"📋 Transaction History ({len(transactions)} transactions)"):
+            # Show recent transactions in a nice format
+            recent_transactions = sorted(transactions, key=lambda x: x['timestamp'], reverse=True)[:10]
+            
+            for transaction in recent_transactions:
+                col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 2])
+                
+                with col1:
+                    formatted_date = datetime.strptime(transaction['date'], "%Y-%m-%d").strftime("%d/%m/%Y")
+                    st.text(formatted_date)
+                
+                with col2:
+                    # Color code by type
+                    if transaction['type'] == 'Deposit':
+                        st.markdown(f"🟢 **{transaction['type']}**")
+                    elif transaction['type'] == 'Interest':
+                        st.markdown(f"🟡 **{transaction['type']}**")
+                    elif transaction['type'] == 'Redemption':
+                        st.markdown(f"🔴 **{transaction['type']}**")
+                    else:
+                        st.markdown(f"🔵 **{transaction['type']}**")
+                
+                with col3:
+                    st.text(transaction['from'])
+                
+                with col4:
+                    st.text(transaction['to'])
+                
+                with col5:
+                    st.text(f"EUR {transaction['amount']:,.2f}")
+                
+                if transaction.get('notes'):
+                    st.caption(f"📝 {transaction['notes']}")
+                
+                st.markdown("---")
 
 # Main application
 def main():
-    """Main application with premium interface"""
+    """Main application with professional interface"""
     
-    # Create premium header
+    # Create professional header
     create_professional_header()
     
     # Navigation
