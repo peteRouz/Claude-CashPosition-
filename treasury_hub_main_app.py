@@ -784,7 +784,7 @@ def get_bank_positions_from_tabelas():
 @st.cache_data(ttl=300)
 def get_bank_currency_details():
     """
-    Obter detalhes das moedas por banco da sheet 'Lista contas'
+    Obter detalhes das moedas por banco da sheet 'Tabelas'
     Retorna um dicionário com os dados de cada banco e suas moedas
     """
     try:
@@ -797,16 +797,16 @@ def get_bank_currency_details():
         else:
             return get_fallback_currency_data()
         
-        lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
+        lista_contas_sheet = pd.read_excel(file_path, sheet_name="tabelas", header=None)
         currencies = ['AUD', 'NOK', 'DKK', 'USD', 'GBP', 'EUR', 'CHF', 'ZAR', 'SEK', 'MYR', 'SGD', 'IDR', 'CAD', 'PLN']
         bank_currency_data = {}
         
         for row_idx in range(1, 14):
             try:
-                if row_idx >= lista_contas_sheet.shape[0]:
+                if row_idx >= tabelas_sheet.shape[0]:
                     break
                     
-                bank_name = lista_contas_sheet.iloc[row_idx, 0]
+                bank_name = tabelas_sheet.iloc[row_idx, 0]
                 
                 if pd.notna(bank_name) and str(bank_name).strip():
                     bank_name_clean = str(bank_name).strip()
@@ -814,8 +814,8 @@ def get_bank_currency_details():
                     total_eur_equivalent = 0
                     
                     for col_idx, currency in enumerate(currencies, start=1):
-                        if col_idx < lista_contas_sheet.shape[1]:
-                            cell_value = lista_contas_sheet.iloc[row_idx, col_idx]
+                        if col_idx < tabelas_sheet.shape[1]:
+                            cell_value = tabelas_sheet.iloc[row_idx, col_idx]
                             
                             if pd.notna(cell_value) and cell_value != 0:
                                 try:
