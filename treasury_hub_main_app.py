@@ -1366,16 +1366,12 @@ def main():
     create_navigation()
     
     # Route to pages
-    # Simple debug indicator
-    if st.session_state.current_page == 'executive':
-        st.info("🎯 EXECUTIVE OVERVIEW MODE ACTIVATED!")
-    
     if st.session_state.current_page == 'overview':
         show_homepage()
     elif st.session_state.current_page == 'executive':
         show_executive_overview()
     elif st.session_state.current_page == 'fx_risk':
-        show_fx_risk()  # Now enhanced with live data and charts
+        show_fx_risk()  # Enhanced with live data and charts
     elif st.session_state.current_page == 'operations':
         show_daily_operations()
     elif st.session_state.current_page == 'investments':
