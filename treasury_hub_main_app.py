@@ -6,11 +6,9 @@ def show_investment_portfolio():
     
     st.markdown('<div class="section-header">Investment Portfolio Tracking</div>', unsafe_allow_html=True)
     
-    # Initialize session state for investments
     if 'investment_transactions' not in st.session_state:
         st.session_state.investment_transactions = []
     
-    # TOP ROW: Transaction Form + Summary Cards
     col1, col2 = st.columns([1, 1])
     
     with col1:
@@ -20,7 +18,6 @@ def show_investment_portfolio():
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Investment Transaction Form
         with st.form("investment_form", clear_on_submit=True):
             transaction_date = st.date_input("Date", value=datetime.now().date())
             
@@ -73,10 +70,8 @@ def show_investment_portfolio():
         st.markdown("</div></div>", unsafe_allow_html=True)
     
     with col2:
-        # Calculate summary metrics
         transactions = st.session_state.investment_transactions
         
-        # Current Balances: (Deposits + Interest + Updates) - Redemptions
         deposits = sum(t['amount'] for t in transactions if t['type'] == 'Deposit')
         interests = sum(t['amount'] for t in transactions if t['type'] == 'Interest')
         updates = sum(t['amount'] for t in transactions if t['type'] == 'Account Balance Update')
@@ -85,14 +80,12 @@ def show_investment_portfolio():
         current_balance = deposits + interests + updates - redemptions
         interest_earned = interests
         
-        # Summary Cards
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">💰 Portfolio Summary</div>
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Current Balances Card
         st.markdown(f"""
         <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #007bff;">
             <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
@@ -106,7 +99,6 @@ def show_investment_portfolio():
         </div>
         """, unsafe_allow_html=True)
         
-        # Interest Earned Card
         st.markdown(f"""
         <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #ffc107;">
             <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
@@ -122,7 +114,6 @@ def show_investment_portfolio():
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # MIDDLE ROW: Total Value Summary Table
     st.markdown("""
     <div class="dashboard-section">
         <div class="section-header">📋 Investment Summary by Product</div>
@@ -130,7 +121,6 @@ def show_investment_portfolio():
     """, unsafe_allow_html=True)
     
     if transactions:
-        # Calculate balances by product (To field)
         product_summary = {}
         
         for transaction in transactions:
@@ -144,7 +134,6 @@ def show_investment_portfolio():
                     'last_activity': transaction['date']
                 }
             
-            # Update amounts by type
             if transaction['type'] == 'Deposit':
                 product_summary[product]['deposits'] += transaction['amount']
             elif transaction['type'] == 'Interest':
@@ -154,11 +143,9 @@ def show_investment_portfolio():
             elif transaction['type'] == 'Redemption':
                 product_summary[product]['redemptions'] += transaction['amount']
             
-            # Update last activity (keep most recent)
             if transaction['date'] > product_summary[product]['last_activity']:
                 product_summary[product]['last_activity'] = transaction['date']
         
-        # Create summary table
         col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
         
         with col1:
@@ -172,9 +159,8 @@ def show_investment_portfolio():
         
         st.markdown("---")
         
-        # Display each product
         for product, data in product_summary.items():
-            if product in ['MMF', 'TD', 'Account']:  # Only show investment products
+            if product in ['MMF', 'TD', 'Account']:
                 current_balance = data['deposits'] + data['interest'] + data['updates'] - data['redemptions']
                 accrued_interest = data['interest']
                 last_activity = data['last_activity']
@@ -206,7 +192,6 @@ def show_investment_portfolio():
     
     st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # BOTTOM ROW: Investment Growth Chart
     st.markdown("""
     <div class="dashboard-section">
         <div class="section-header">📈 Total Value Growth</div>
@@ -214,8 +199,6 @@ def show_investment_portfolio():
     """, unsafe_allow_html=True)
     
     if transactions:
-        # Calculate cumulative value over time
-        # Sort transactions by date
         sorted_transactions = sorted(transactions, key=lambda x: x['date'])
         
         dates = []
@@ -225,7 +208,6 @@ def show_investment_portfolio():
         for transaction in sorted_transactions:
             transaction_date = datetime.strptime(transaction['date'], "%Y-%m-%d")
             
-            # Add/subtract based on transaction type
             if transaction['type'] in ['Deposit', 'Interest', 'Account Balance Update']:
                 running_total += transaction['amount']
             elif transaction['type'] == 'Redemption':
@@ -234,7 +216,6 @@ def show_investment_portfolio():
             dates.append(transaction_date)
             cumulative_values.append(running_total)
         
-        # Create the growth chart
         fig = go.Figure()
         
         fig.add_trace(go.Scatter(
@@ -255,53 +236,6 @@ def show_investment_portfolio():
             plot_bgcolor='white',
             paper_bgcolor='white',
             showlegend=False,
-            xaxis=dict(
-                title='Date',
-                showgrid=True,
-                gridcolor='#f1f5f9',
-                tickformat='%d %b'
-            ),
-            yaxis=dict(
-                title='EUR',
-                showgrid=True,
-                gridcolor='#f1f5f9',
-                tickformat=',.0f'
-            )
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Chart summary
-        if cumulative_values:
-            total_growth = cumulative_values[-1] - cumulative_values[0] if len(cumulative_values) > 1 else cumulative_values[0]
-            growth_percentage = (total_growth / cumulative_values[0] * 100) if cumulative_values[0] != 0 else 0
-            
-            st.caption(f"📊 Portfolio Growth: EUR {total_growth:,.2f} ({growth_percentage:+.1f}%) • Latest Value: EUR {cumulative_values[-1]:,.2f} • Transactions: {len(transactions)}")
-    
-    else:
-        # Show placeholder chart
-        st.info("📈 Investment growth chart will appear here once you add transactions")
-        
-        # Sample chart to show structure
-        sample_dates = pd.date_range(start=datetime.now() - timedelta(days=90), periods=10, freq='10D')
-        sample_values = [3000, 3200, 3150, 3400, 3600, 3800, 4100, 4050, 4300, 4500]
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=sample_dates,
-            y=sample_values,
-            mode='lines',
-            name='Sample Growth',
-            line=dict(color='#28a745', width=2, dash='dash'),
-            opacity=0.6
-        ))
-        
-        fig.update_layout(
-            height=350,
-            margin=dict(l=0, r=0, t=20, b=0),
-            plot_bgcolor='white',
-            paper_bgcolor='white',
-            showlegend=False,
             xaxis=dict(title='Date', showgrid=True, gridcolor='#f1f5f9'),
             yaxis=dict(title='EUR', showgrid=True, gridcolor='#f1f5f9')
         )
@@ -311,10 +245,8 @@ def show_investment_portfolio():
     
     st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # Transaction History (Optional - can be expandable)
     if transactions:
         with st.expander(f"📋 Transaction History ({len(transactions)} transactions)"):
-            # Show recent transactions in a nice format
             recent_transactions = sorted(transactions, key=lambda x: x['timestamp'], reverse=True)[:10]
             
             for transaction in recent_transactions:
@@ -325,7 +257,6 @@ def show_investment_portfolio():
                     st.text(formatted_date)
                 
                 with col2:
-                    # Color code by type
                     if transaction['type'] == 'Deposit':
                         st.markdown(f"🟢 **{transaction['type']}**")
                     elif transaction['type'] == 'Interest':
@@ -375,15 +306,58 @@ def main():
         show_homepage()
 
 if __name__ == "__main__":
-    main()def show_fx_risk():
-    """Enhanced FX Risk Management with live data and charts (from FX.py)"""
+    main()layout(
+            height=350,
+            margin=dict(l=0, r=0, t=20, b=0),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            showlegend=False,
+            xaxis=dict(
+                title='Date',
+                showgrid=True,
+                gridcolor='#f1f5f9',
+                tickformat='%d %b'
+            ),
+            yaxis=dict(
+                title='EUR',
+                showgrid=True,
+                gridcolor='#f1f5f9',
+                tickformat=',.0f'
+            )
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        if cumulative_values:
+            total_growth = cumulative_values[-1] - cumulative_values[0] if len(cumulative_values) > 1 else cumulative_values[0]
+            growth_percentage = (total_growth / cumulative_values[0] * 100) if cumulative_values[0] != 0 else 0
+            
+            st.caption(f"📊 Portfolio Growth: EUR {total_growth:,.2f} ({growth_percentage:+.1f}%) • Latest Value: EUR {cumulative_values[-1]:,.2f} • Transactions: {len(transactions)}")
+    
+    else:
+        st.info("📈 Investment growth chart will appear here once you add transactions")
+        
+        sample_dates = pd.date_range(start=datetime.now() - timedelta(days=90), periods=10, freq='10D')
+        sample_values = [3000, 3200, 3150, 3400, 3600, 3800, 4100, 4050, 4300, 4500]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=sample_dates,
+            y=sample_values,
+            mode='lines',
+            name='Sample Growth',
+            line=dict(color='#28a745', width=2, dash='dash'),
+            opacity=0.6
+        ))
+        
+        fig.update_def show_fx_risk():
+    """Enhanced FX Risk Management with live data and charts"""
     if st.button("🏠 Back to Home", key="back_home_fx"):
         st.session_state.current_page = 'overview'
         st.rerun()
     
     st.markdown('<div class="section-header">FX Risk Management - Live Trading</div>', unsafe_allow_html=True)
     
-    # Get live FX data
     fx_rates, is_live = get_live_fx_rates()
     
     if 'fx_deals' not in st.session_state:
@@ -392,7 +366,6 @@ if __name__ == "__main__":
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        # Live FX Rates Section
         status_indicator = "🟢 LIVE" if is_live else "🟡 DEMO"
         
         st.markdown(f"""
@@ -404,7 +377,6 @@ if __name__ == "__main__":
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Auto-refresh button and controls
         col_refresh, col_auto, col_time = st.columns([1, 1, 2])
         with col_refresh:
             if st.button("🔄 Refresh", key="refresh_fx"):
@@ -418,19 +390,15 @@ if __name__ == "__main__":
             current_time = datetime.now().strftime("%H:%M:%S")
             st.caption(f"📡 Last update: {current_time} {'(Live API)' if is_live else '(Demo Mode)'}")
         
-        # Auto-refresh logic for FX rates (every 30 seconds to avoid being too slow)
         if auto_refresh_rates:
             st.info("🔄 Auto-refresh enabled (30s intervals)")
             time.sleep(30)
             st.rerun()
         
-        # Display FX rates in grid
         fx_cols = st.columns(3)
         for i, (pair, data) in enumerate(fx_rates.items()):
             with fx_cols[i % 3]:
                 color_class = "change-positive" if data['color'] == 'positive' else "change-negative"
-                
-                # Add blinking effect for live data
                 blink_style = "animation: blink 2s infinite;" if is_live else ""
                 
                 st.markdown(f"""
@@ -443,7 +411,6 @@ if __name__ == "__main__":
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         
-        # TRADING CHART SECTION
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">
@@ -453,7 +420,6 @@ if __name__ == "__main__":
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Chart selector
         chart_cols = st.columns([2, 1, 1])
         with chart_cols[0]:
             selected_pair = st.selectbox(
@@ -472,17 +438,14 @@ if __name__ == "__main__":
         with chart_cols[2]:
             auto_refresh_chart = st.checkbox("Auto Chart 🔄", value=False, key="auto_refresh_chart", help="Auto-refresh chart every 60 seconds")
         
-        # Create and display the trading chart
         trading_fig = create_fx_trading_chart(selected_pair)
         st.plotly_chart(trading_fig, use_container_width=True)
         
-        # Chart info
         st.caption(f"📊 {selected_pair} • Timeframe: {timeframe} • Candlestick + MA(20) • Last update: {datetime.now().strftime('%H:%M:%S')}")
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
     with col2:
-        # FX Deal Request Form
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">🚀 FX Deal Request</div>
@@ -496,7 +459,6 @@ if __name__ == "__main__":
             contract_type = st.selectbox("Contract Type", ['Spot', 'Forward', 'Swap', 'Option'])
             value_date = st.date_input("Value Date", value=datetime.now().date())
             
-            # Special note for SEK
             if sell_currency == 'SEK' or buy_currency == 'SEK':
                 st.warning("⚠️ SEK Trading: Historically challenging rates - proceed with caution")
             
@@ -527,40 +489,36 @@ if __name__ == "__main__":
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         
-        # Market Status Widget - Markets you actually work with
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">🌍 Trading Markets Status</div>
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Your actual trading markets with correct timezones
         now = datetime.now()
         markets = {
-            "🇺🇸 New York": (14, 30, 21, 0),      # 14:30-21:00 UTC (NYSE)
-            "🇬🇧 London": (8, 0, 16, 30),         # 08:00-16:30 UTC (LSE)
-            "🇲🇾 Kuala Lumpur": (1, 0, 9, 0),     # 01:00-09:00 UTC (MYR trading)
-            "🇮🇩 Jakarta": (2, 0, 9, 0),          # 02:00-09:00 UTC (IDR trading)
-            "🇨🇦 Toronto": (14, 30, 21, 0),       # 14:30-21:00 UTC (CAD trading)
-            "🇦🇺 Sydney": (22, 0, 7, 0),          # 22:00-07:00 UTC (AUD trading)
-            "🇸🇪 Stockholm": (8, 0, 16, 30),      # 08:00-16:30 UTC (SEK - your challenging currency!)
-            "🇳🇴 Oslo": (8, 0, 16, 30)            # 08:00-16:30 UTC (NOK - part of EU market)
+            "🇺🇸 New York": (14, 30, 21, 0),
+            "🇬🇧 London": (8, 0, 16, 30),
+            "🇲🇾 Kuala Lumpur": (1, 0, 9, 0),
+            "🇮🇩 Jakarta": (2, 0, 9, 0),
+            "🇨🇦 Toronto": (14, 30, 21, 0),
+            "🇦🇺 Sydney": (22, 0, 7, 0),
+            "🇸🇪 Stockholm": (8, 0, 16, 30),
+            "🇳🇴 Oslo": (8, 0, 16, 30)
         }
         
-        # Special highlight for SEK since you mentioned trading difficulties
         for market, (open_h, open_m, close_h, close_m) in markets.items():
             current_minutes = now.hour * 60 + now.minute
             open_minutes = open_h * 60 + open_m
             close_minutes = close_h * 60 + close_m
             
-            if market in ["🇦🇺 Sydney"]:  # Sydney crosses midnight
+            if market in ["🇦🇺 Sydney"]:
                 is_open = now.hour >= open_h or now.hour < close_h
             else:
                 is_open = open_minutes <= current_minutes <= close_minutes
             
             status = "🟢 OPEN" if is_open else "🔴 CLOSED"
             
-            # Special highlighting for SEK
             if "Stockholm" in market:
                 st.markdown(f"**{market}**: {status} ⚠️ *SEK Trading - Challenging pair*")
             elif "Oslo" in market:
@@ -570,7 +528,6 @@ if __name__ == "__main__":
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # Pending FX Deals
     if st.session_state.fx_deals:
         st.markdown("""
         <div class="dashboard-section">
@@ -621,7 +578,6 @@ def show_daily_operations():
     
     st.markdown('<div class="section-header">Daily Operations Center</div>', unsafe_allow_html=True)
     
-    # Initialize session states
     if 'operational_workflows' not in st.session_state:
         st.session_state.operational_workflows = []
     if 'intraday_transfers' not in st.session_state:
@@ -629,7 +585,6 @@ def show_daily_operations():
     if 'pcard_requests' not in st.session_state:
         st.session_state.pcard_requests = []
     
-    # TOP ROW: Operational Workflows + Intraday Transfers
     col1, col2 = st.columns([1, 1])
     
     with col1:
@@ -639,7 +594,6 @@ def show_daily_operations():
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Workflow Form
         with st.form("workflow_form", clear_on_submit=True):
             subject = st.text_input("Subject", placeholder="Enter task subject...")
             workflow_date = st.date_input("Date", value=datetime.now().date())
@@ -660,7 +614,6 @@ def show_daily_operations():
                 st.success("Workflow added successfully!")
                 st.rerun()
         
-        # Display Workflows
         if st.session_state.operational_workflows:
             st.markdown("**Active Workflows:**")
             
@@ -742,7 +695,6 @@ def show_daily_operations():
                 else:
                     st.error("From and To companies must be different!")
         
-        # Display Transfers
         if st.session_state.intraday_transfers:
             st.markdown("**Recent Transfers:**")
             
@@ -759,7 +711,6 @@ def show_daily_operations():
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # MIDDLE ROW: Cashflow vs Actuals Chart
     st.markdown("""
     <div class="dashboard-section">
         <div class="section-header">📊 Cashflow vs Actuals</div>
@@ -804,7 +755,6 @@ def show_daily_operations():
     
     st.markdown("</div></div>", unsafe_allow_html=True)
     
-    # BOTTOM ROW: P-Card Requests
     st.markdown("""
     <div class="dashboard-section">
         <div class="section-header">💳 P-Card Requests</div>
@@ -1136,25 +1086,21 @@ st.markdown("""
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'overview'
 
-# Enhanced FX functions with live data (from FX.py)
-@st.cache_data(ttl=60)  # Cache for 1 minute
+# Enhanced FX functions with live data
+@st.cache_data(ttl=60)
 def get_live_fx_rates():
     """Get live FX rates from free API"""
     try:
-        # Using exchangerate-api.com (free tier: 1500 requests/month)
         url = "https://api.exchangerate-api.com/v4/latest/EUR"
-        
         response = requests.get(url, timeout=5)
         data = response.json()
         
         if response.status_code == 200:
             rates = data['rates']
-            
-            # Calculate changes (simulate for demo - in real app you'd store previous rates)
             fx_data = {
                 'USD/EUR': {
                     'rate': 1/rates.get('USD', 1.0857), 
-                    'change': np.random.uniform(-0.5, 0.5),  # Simulate change
+                    'change': np.random.uniform(-0.5, 0.5),
                     'raw_rate': rates.get('USD', 1.0857)
                 },
                 'GBP/EUR': {
@@ -1184,17 +1130,15 @@ def get_live_fx_rates():
                 }
             }
             
-            # Add color based on change
             for pair in fx_data:
                 fx_data[pair]['color'] = 'positive' if fx_data[pair]['change'] >= 0 else 'negative'
                 fx_data[pair]['change_text'] = f"+{fx_data[pair]['change']:.2f}%" if fx_data[pair]['change'] >= 0 else f"{fx_data[pair]['change']:.2f}%"
             
-            return fx_data, True  # True = live data
+            return fx_data, True
             
     except Exception as e:
         st.warning(f"⚠️ Live FX API unavailable: {str(e)}")
     
-    # Fallback to demo data
     return get_demo_fx_rates(), False
 
 def get_demo_fx_rates():
@@ -1211,19 +1155,16 @@ def get_demo_fx_rates():
 def generate_trading_chart_data(base_price=1.0857, days=30):
     """Generate realistic forex chart data"""
     dates = pd.date_range(start=datetime.now() - timedelta(days=days), periods=days*24, freq='H')
-    
-    # Generate realistic price movements
-    returns = np.random.normal(0, 0.002, len(dates))  # Small hourly returns
-    returns[0] = 0  # Start at base price
+    returns = np.random.normal(0, 0.002, len(dates))
+    returns[0] = 0
     
     prices = [base_price]
     for i in range(1, len(returns)):
         new_price = prices[-1] * (1 + returns[i])
         prices.append(new_price)
     
-    # Create OHLC data
     ohlc_data = []
-    for i in range(0, len(prices), 4):  # Group every 4 hours
+    for i in range(0, len(prices), 4):
         if i + 4 <= len(prices):
             chunk = prices[i:i+4]
             ohlc_data.append({
@@ -1238,10 +1179,8 @@ def generate_trading_chart_data(base_price=1.0857, days=30):
 
 def create_fx_trading_chart(pair_name="EUR/USD"):
     """Create professional trading chart with WHITE background"""
-    # Generate data
     chart_data = generate_trading_chart_data()
     
-    # Create candlestick chart
     fig = go.Figure(data=[go.Candlestick(
         x=chart_data['datetime'],
         open=chart_data['open'],
@@ -1249,45 +1188,43 @@ def create_fx_trading_chart(pair_name="EUR/USD"):
         low=chart_data['low'],
         close=chart_data['close'],
         name=pair_name,
-        increasing_line_color='#00c851',  # Green for up
-        decreasing_line_color='#ff4444',  # Red for down
+        increasing_line_color='#00c851',
+        decreasing_line_color='#ff4444',
         increasing_fillcolor='#00c851',
         decreasing_fillcolor='#ff4444'
     )])
     
-    # Add moving average
     chart_data['ma_20'] = chart_data['close'].rolling(window=20).mean()
     fig.add_trace(go.Scatter(
         x=chart_data['datetime'],
         y=chart_data['ma_20'],
         mode='lines',
         name='MA(20)',
-        line=dict(color='#ff8800', width=2),  # Orange moving average
+        line=dict(color='#ff8800', width=2),
         opacity=0.8
     ))
     
-    # WHITE BACKGROUND Professional styling
     fig.update_layout(
         title=f"{pair_name} - Live Trading Chart",
         height=400,
         margin=dict(l=0, r=0, t=40, b=0),
-        plot_bgcolor='white',  # WHITE background instead of black
-        paper_bgcolor='white',  # WHITE paper background
-        font=dict(color='#2d3748', size=12),  # Dark text for readability
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(color='#2d3748', size=12),
         xaxis=dict(
             showgrid=True,
-            gridcolor='#e2e8f0',  # Light gray grid
+            gridcolor='#e2e8f0',
             gridwidth=0.5,
             type='date',
             rangeslider=dict(visible=False),
-            linecolor='#cbd5e0'  # Light border
+            linecolor='#cbd5e0'
         ),
         yaxis=dict(
             showgrid=True,
-            gridcolor='#e2e8f0',  # Light gray grid
+            gridcolor='#e2e8f0',
             gridwidth=0.5,
             side='right',
-            linecolor='#cbd5e0'  # Light border
+            linecolor='#cbd5e0'
         ),
         legend=dict(
             orientation="h",
@@ -1295,13 +1232,13 @@ def create_fx_trading_chart(pair_name="EUR/USD"):
             y=1.02,
             xanchor="right",
             x=1,
-            bgcolor='rgba(255,255,255,0.8)'  # Semi-transparent white background
+            bgcolor='rgba(255,255,255,0.8)'
         )
     )
     
     return fig
 
-# Data functions with SAFE number handling (from main file)
+# Data functions with SAFE number handling
 @st.cache_data(ttl=300)
 def get_daily_cash_flow():
     """Get daily cash flow with safe number formatting"""
@@ -1321,7 +1258,6 @@ def get_daily_cash_flow():
                 'percentage_color': 'positive'
             }
         
-        # Read data safely
         lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
         
         if lista_contas_sheet.shape[0] <= 101:
@@ -1336,10 +1272,8 @@ def get_daily_cash_flow():
         cash_flow_value = 0.0
         percentage_value = 0.0
         
-        # Search for values
         for col_index in range(lista_contas_sheet.shape[1]):
             try:
-                # Cash Flow from row 101
                 cell_value_101 = lista_contas_sheet.iloc[100, col_index]
                 if pd.notna(cell_value_101):
                     try:
@@ -1349,7 +1283,6 @@ def get_daily_cash_flow():
                     except (ValueError, TypeError):
                         pass
                 
-                # Percentage from row 102
                 cell_value_102 = lista_contas_sheet.iloc[101, col_index]
                 if pd.notna(cell_value_102):
                     try:
@@ -1361,7 +1294,6 @@ def get_daily_cash_flow():
             except Exception:
                 continue
         
-        # Safe formatting
         if cash_flow_value >= 0:
             cash_flow_text = f"EUR {cash_flow_value:,.0f}"
         else:
@@ -1417,7 +1349,6 @@ def get_executive_summary():
                 'last_updated': datetime.now().strftime("%H:%M")
             }
         
-        # Try to read real data
         try:
             tabelas_sheet = pd.read_excel(file_path, sheet_name="Tabelas", header=None)
             total_liquidity_raw = tabelas_sheet.iloc[91, 2]
@@ -1466,7 +1397,6 @@ def get_latest_variation():
         if lista_contas_sheet.shape[0] <= 100:
             return {'variation': 0.0, 'text': '+EUR 0 vs Yesterday', 'color': 'positive'}
         
-        # Search from right to left
         for col_index in range(lista_contas_sheet.shape[1] - 1, -1, -1):
             try:
                 cell_value = lista_contas_sheet.iloc[100, col_index]
@@ -1529,7 +1459,6 @@ def get_dynamic_liquidity_data():
         else:
             return get_sample_liquidity_data()
         
-        # Read safely
         try:
             lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
         except Exception:
@@ -1539,7 +1468,6 @@ def get_dynamic_liquidity_data():
         values = []
         found_columns = []
         
-        # Search for "VALOR EUR" columns
         for col_index in range(lista_contas_sheet.shape[1]):
             try:
                 linha2_value = lista_contas_sheet.iloc[1, col_index]
@@ -1557,6 +1485,112 @@ def get_dynamic_liquidity_data():
                         eur_value = lista_contas_sheet.iloc[98, col_index]
                     else:
                         continue
+                    
+                    if pd.notna(date_value) and pd.notna(eur_value) and eur_value != 0:
+                        try:
+                            if isinstance(date_value, str):
+                                date_str = str(date_value).strip()
+                                try:
+                                    parsed_date = pd.to_datetime(date_str, format='%d-%b-%y')
+                                except:
+                                    try:
+                                        parsed_date = pd.to_datetime(date_str, format='%d/%m/%Y')
+                                    except:
+                                        parsed_date = pd.to_datetime(date_str)
+                            elif isinstance(date_value, (int, float)):
+                                if date_value > 59:
+                                    parsed_date = datetime(1900, 1, 1) + timedelta(days=date_value - 2)
+                                else:
+                                    parsed_date = datetime(1900, 1, 1) + timedelta(days=date_value - 1)
+                            else:
+                                parsed_date = pd.to_datetime(date_value)
+                                
+                        except Exception:
+                            continue
+                        
+                        eur_millions = float(eur_value) / 1_000_000
+                        
+                        dates.append(parsed_date)
+                        values.append(eur_millions)
+                        
+            except Exception:
+                continue
+        
+        if len(dates) > 0 and len(values) > 0:
+            combined = list(zip(dates, values))
+            combined.sort(key=lambda x: x[0])
+            dates, values = zip(*combined)
+            
+            if len(dates) > 0:
+                latest_date = dates[-1]
+                cutoff_date = latest_date - timedelta(days=30)
+                
+                filtered_data = [(d, v) for d, v in zip(dates, values) if d >= cutoff_date]
+                
+                if filtered_data:
+                    dates, values = zip(*filtered_data)
+            
+            return {
+                'dates': list(dates),
+                'values': list(values),
+                'source': f'Excel Real Data ({len(dates)} days)',
+                'columns_found': found_columns
+            }
+        else:
+            return get_sample_liquidity_data()
+            
+    except Exception:
+        return get_sample_liquidity_data()
+
+def get_fallback_banks():
+    """Fallback bank data"""
+    banks_data = [
+        {'Bank': 'UME BANK', 'Balance': 5.668, 'Currency': 'EUR'},
+        {'Bank': 'Commerzbank', 'Balance': 3.561, 'Currency': 'EUR'},
+        {'Bank': 'FKP Bank', 'Balance': 3.55, 'Currency': 'EUR'},
+        {'Bank': 'FNB (SA)', 'Balance': 3.34, 'Currency': 'EUR'},
+        {'Bank': 'Handelsbanken', 'Balance': 1.650, 'Currency': 'EUR'},
+        {'Bank': 'Swedbank', 'Balance': 1.45, 'Currency': 'EUR'},
+        {'Bank': 'HSBC', 'Balance': 1.513, 'Currency': 'EUR'},
+        {'Bank': 'ING Bank', 'Balance': 1.347, 'Currency': 'EUR'},
+        {'Bank': 'Jyske Bank', 'Balance': 0.760, 'Currency': 'EUR'},
+        {'Bank': 'BPC BANK', 'Balance': 0.738, 'Currency': 'EUR'},
+        {'Bank': 'SEB', 'Balance': 0.200, 'Currency': 'EUR'},
+        {'Bank': 'UBS', 'Balance': 0.72, 'Currency': 'EUR'},
+        {'Bank': 'LBCB', 'Balance': 0.57, 'Currency': 'EUR'}
+    ]
+    
+    banks_df = pd.DataFrame(banks_data)
+    banks_df = banks_df.sort_values('Balance', ascending=False)
+    
+    total_balance = banks_df['Balance'].sum()
+    banks_df['Percentage'] = (banks_df['Balance'] / total_balance * 100).round(1)
+    banks_df['Yield'] = banks_df['Percentage'].apply(lambda x: f"{x}%")
+    
+    return banks_df
+
+@st.cache_data(ttl=300)
+def get_bank_positions_from_tabelas():
+    """Get bank positions with SAFE handling"""
+    try:
+        excel_file = "TREASURY DASHBOARD.xlsx"
+        
+        if os.path.exists(excel_file):
+            file_path = excel_file
+        elif os.path.exists(f"data/{excel_file}"):
+            file_path = f"data/{excel_file}"
+        else:
+            return get_fallback_banks()
+        
+        try:
+            tabelas_sheet = pd.read_excel(file_path, sheet_name="Tabelas", header=None)
+            
+            banks_data = []
+            
+            for i in range(78, 91):
+                try:
+                    bank_name = tabelas_sheet.iloc[i, 1]
+                    balance = tabelas_sheet.iloc[i, 2]
                     
                     if pd.notna(bank_name) and pd.notna(balance) and str(bank_name).strip():
                         banks_data.append({
@@ -1585,7 +1619,6 @@ def get_dynamic_liquidity_data():
     except:
         return get_fallback_banks()
 
-# NEW HOVER FUNCTIONS
 @st.cache_data(ttl=300)
 def get_bank_currency_details():
     """
@@ -1672,7 +1705,6 @@ def get_bank_currency_details():
         return bank_currency_data
         
     except Exception as e:
-        st.error(f"Erro ao ler dados de moedas: {e}")
         return get_fallback_currency_data()
 
 def get_fallback_currency_data():
@@ -1716,9 +1748,7 @@ def get_fallback_currency_data():
     }
 
 def create_bank_hover_tooltip(bank_name, currency_data):
-    """
-    Criar tooltip HTML para hover com informações das moedas
-    """
+    """Criar tooltip HTML para hover com informações das moedas"""
     if not currency_data:
         return f"<div>No currency data for {bank_name}</div>"
     
@@ -1828,7 +1858,6 @@ def create_professional_header():
     """Create header with SAFE number formatting"""
     summary = get_executive_summary()
     
-    # Ensure all values are properly formatted
     total_liquidity = summary.get('total_liquidity', 0.0)
     bank_accounts = summary.get('bank_accounts', 0)
     active_banks = summary.get('active_banks', 0)
@@ -1877,10 +1906,9 @@ def create_navigation():
                 st.rerun()
 
 def show_homepage():
-    """Show homepage with just header and navigation - content area for future development"""
+    """Show homepage"""
     st.markdown('<div class="section-header">Treasury Operations Center - Homepage</div>', unsafe_allow_html=True)
     
-    # Future homepage content area
     st.markdown("""
     <div class="dashboard-section">
         <div class="section-content">
@@ -1908,9 +1936,7 @@ def show_homepage():
     """, unsafe_allow_html=True)
 
 def show_executive_overview_with_hover():
-    """
-    Executive Overview com hover tooltips para mostrar moedas
-    """
+    """Executive Overview com hover tooltips para mostrar moedas"""
     st.markdown('<div class="section-header">Executive Summary</div>', unsafe_allow_html=True)
     
     # Get data safely
@@ -2032,7 +2058,6 @@ def show_executive_overview_with_hover():
             
         except Exception as e:
             st.error(f"Error loading chart: {e}")
-            # Fallback chart
             dates = pd.date_range(start=datetime.now() - timedelta(days=7), periods=7, freq='D')
             values = [28.5, 30.2, 31.8, 29.4, 32.1, 31.7, 32.6]
             
@@ -2088,12 +2113,11 @@ def show_executive_overview_with_hover():
         
         banks_html += "</div>"
         
-        # Mostrar usando components.v1.html para suportar interatividade
         st.components.v1.html(banks_html, height=300, scrolling=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         
-        # Mostrar dados de debug (opcional)
+        # Debug section
         with st.expander("🔍 Debug - Currency Data Found"):
             st.write("**Bancos encontrados com dados de moedas:**")
             if bank_currency_data:
@@ -2114,110 +2138,4 @@ def show_executive_overview_with_hover():
             Top 5 banks represent 65% of total liquidity, ensuring balanced concentration risk.
         </div>
     </div>
-                    if pd.notna(date_value) and pd.notna(eur_value) and eur_value != 0:
-                        try:
-                            if isinstance(date_value, str):
-                                date_str = str(date_value).strip()
-                                try:
-                                    parsed_date = pd.to_datetime(date_str, format='%d-%b-%y')
-                                except:
-                                    try:
-                                        parsed_date = pd.to_datetime(date_str, format='%d/%m/%Y')
-                                    except:
-                                        parsed_date = pd.to_datetime(date_str)
-                            elif isinstance(date_value, (int, float)):
-                                if date_value > 59:
-                                    parsed_date = datetime(1900, 1, 1) + timedelta(days=date_value - 2)
-                                else:
-                                    parsed_date = datetime(1900, 1, 1) + timedelta(days=date_value - 1)
-                            else:
-                                parsed_date = pd.to_datetime(date_value)
-                                
-                        except Exception:
-                            continue
-                        
-                        eur_millions = float(eur_value) / 1_000_000
-                        
-                        dates.append(parsed_date)
-                        values.append(eur_millions)
-                        
-            except Exception:
-                continue
-        
-        if len(dates) > 0 and len(values) > 0:
-            combined = list(zip(dates, values))
-            combined.sort(key=lambda x: x[0])
-            dates, values = zip(*combined)
-            
-            if len(dates) > 0:
-                latest_date = dates[-1]
-                cutoff_date = latest_date - timedelta(days=30)
-                
-                filtered_data = [(d, v) for d, v in zip(dates, values) if d >= cutoff_date]
-                
-                if filtered_data:
-                    dates, values = zip(*filtered_data)
-            
-            return {
-                'dates': list(dates),
-                'values': list(values),
-                'source': f'Excel Real Data ({len(dates)} days)',
-                'columns_found': found_columns
-            }
-        else:
-            return get_sample_liquidity_data()
-            
-    except Exception:
-        return get_sample_liquidity_data()
-
-def get_fallback_banks():
-    """Fallback bank data"""
-    banks_data = [
-        {'Bank': 'UME BANK', 'Balance': 5.668, 'Currency': 'EUR'},
-        {'Bank': 'Commerzbank', 'Balance': 3.561, 'Currency': 'EUR'},
-        {'Bank': 'FKP Bank', 'Balance': 3.55, 'Currency': 'EUR'},
-        {'Bank': 'FNB (SA)', 'Balance': 3.34, 'Currency': 'EUR'},
-        {'Bank': 'Handelsbanken', 'Balance': 1.650, 'Currency': 'EUR'},
-        {'Bank': 'Swedbank', 'Balance': 1.45, 'Currency': 'EUR'},
-        {'Bank': 'HSBC', 'Balance': 1.513, 'Currency': 'EUR'},
-        {'Bank': 'ING Bank', 'Balance': 1.347, 'Currency': 'EUR'},
-        {'Bank': 'Jyske Bank', 'Balance': 0.760, 'Currency': 'EUR'},
-        {'Bank': 'BPC BANK', 'Balance': 0.738, 'Currency': 'EUR'},
-        {'Bank': 'SEB', 'Balance': 0.200, 'Currency': 'EUR'},
-        {'Bank': 'UBS', 'Balance': 0.72, 'Currency': 'EUR'},
-        {'Bank': 'LBCB', 'Balance': 0.57, 'Currency': 'EUR'}
-    ]
-    
-    banks_df = pd.DataFrame(banks_data)
-    banks_df = banks_df.sort_values('Balance', ascending=False)
-    
-    total_balance = banks_df['Balance'].sum()
-    banks_df['Percentage'] = (banks_df['Balance'] / total_balance * 100).round(1)
-    banks_df['Yield'] = banks_df['Percentage'].apply(lambda x: f"{x}%")
-    
-    return banks_df
-
-@st.cache_data(ttl=300)
-def get_bank_positions_from_tabelas():
-    """Get bank positions with SAFE handling"""
-    try:
-        excel_file = "TREASURY DASHBOARD.xlsx"
-        
-        if os.path.exists(excel_file):
-            file_path = excel_file
-        elif os.path.exists(f"data/{excel_file}"):
-            file_path = f"data/{excel_file}"
-        else:
-            return get_fallback_banks()
-        
-        try:
-            tabelas_sheet = pd.read_excel(file_path, sheet_name="Tabelas", header=None)
-            
-            banks_data = []
-            
-            for i in range(78, 91):
-                try:
-                    bank_name = tabelas_sheet.iloc[i, 1]
-                    balance = tabelas_sheet.iloc[i, 2]
-                    
-                    if pd.notna(
+    """, unsafe_allow_html=True)
