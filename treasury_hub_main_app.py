@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Treasury HUB - Versão Consolidada com Hover
-===========================================
-CFO-grade interface com dados reais do banco + FX Trading melhorado + Hover nas moedas
-Features: Dados reais Excel, FX rates ao vivo, Charts profissionais, Status de mercado, Hover tooltips
+Treasury HUB - Versão Consolidada
+=================================
+CFO-grade interface com dados reais do banco + FX Trading melhorado
+Features: Dados reais Excel, FX rates ao vivo, Charts profissionais, Status de mercado
 """
 
 import streamlit as st
@@ -208,38 +208,6 @@ st.markdown("""
         0%, 100% { border-color: #e2e8f0; }
         50% { border-color: #00ff88; }
     }
-    
-    /* Hover styles for bank positions */
-    .bank-row {
-        position: relative;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 1.5rem;
-        border-bottom: 1px solid #f1f5f9;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    }
-    
-    .bank-row:hover {
-        background-color: #f7fafc;
-    }
-    
-    .bank-row .tooltip {
-        visibility: hidden;
-        position: absolute;
-        z-index: 1000;
-        left: 100%;
-        top: 0;
-        margin-left: 10px;
-        opacity: 0;
-        transition: opacity 0.3s;
-    }
-    
-    .bank-row:hover .tooltip {
-        visibility: visible;
-        opacity: 1;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -247,21 +215,25 @@ st.markdown("""
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'overview'
 
-# Enhanced FX functions with live data
-@st.cache_data(ttl=60)
+# Enhanced FX functions with live data (from FX.py)
+@st.cache_data(ttl=60)  # Cache for 1 minute
 def get_live_fx_rates():
     """Get live FX rates from free API"""
     try:
+        # Using exchangerate-api.com (free tier: 1500 requests/month)
         url = "https://api.exchangerate-api.com/v4/latest/EUR"
+        
         response = requests.get(url, timeout=5)
         data = response.json()
         
         if response.status_code == 200:
             rates = data['rates']
+            
+            # Calculate changes (simulate for demo - in real app you'd store previous rates)
             fx_data = {
                 'USD/EUR': {
                     'rate': 1/rates.get('USD', 1.0857), 
-                    'change': np.random.uniform(-0.5, 0.5),
+                    'change': np.random.uniform(-0.5, 0.5),  # Simulate change
                     'raw_rate': rates.get('USD', 1.0857)
                 },
                 'GBP/EUR': {
@@ -291,15 +263,17 @@ def get_live_fx_rates():
                 }
             }
             
+            # Add color based on change
             for pair in fx_data:
                 fx_data[pair]['color'] = 'positive' if fx_data[pair]['change'] >= 0 else 'negative'
                 fx_data[pair]['change_text'] = f"+{fx_data[pair]['change']:.2f}%" if fx_data[pair]['change'] >= 0 else f"{fx_data[pair]['change']:.2f}%"
             
-            return fx_data, True
+            return fx_data, True  # True = live data
             
     except Exception as e:
         st.warning(f"⚠️ Live FX API unavailable: {str(e)}")
     
+    # Fallback to demo data
     return get_demo_fx_rates(), False
 
 def get_demo_fx_rates():
@@ -316,16 +290,19 @@ def get_demo_fx_rates():
 def generate_trading_chart_data(base_price=1.0857, days=30):
     """Generate realistic forex chart data"""
     dates = pd.date_range(start=datetime.now() - timedelta(days=days), periods=days*24, freq='H')
-    returns = np.random.normal(0, 0.002, len(dates))
-    returns[0] = 0
+    
+    # Generate realistic price movements
+    returns = np.random.normal(0, 0.002, len(dates))  # Small hourly returns
+    returns[0] = 0  # Start at base price
     
     prices = [base_price]
     for i in range(1, len(returns)):
         new_price = prices[-1] * (1 + returns[i])
         prices.append(new_price)
     
+    # Create OHLC data
     ohlc_data = []
-    for i in range(0, len(prices), 4):
+    for i in range(0, len(prices), 4):  # Group every 4 hours
         if i + 4 <= len(prices):
             chunk = prices[i:i+4]
             ohlc_data.append({
@@ -340,8 +317,10 @@ def generate_trading_chart_data(base_price=1.0857, days=30):
 
 def create_fx_trading_chart(pair_name="EUR/USD"):
     """Create professional trading chart with WHITE background"""
+    # Generate data
     chart_data = generate_trading_chart_data()
     
+    # Create candlestick chart
     fig = go.Figure(data=[go.Candlestick(
         x=chart_data['datetime'],
         open=chart_data['open'],
@@ -349,43 +328,45 @@ def create_fx_trading_chart(pair_name="EUR/USD"):
         low=chart_data['low'],
         close=chart_data['close'],
         name=pair_name,
-        increasing_line_color='#00c851',
-        decreasing_line_color='#ff4444',
+        increasing_line_color='#00c851',  # Green for up
+        decreasing_line_color='#ff4444',  # Red for down
         increasing_fillcolor='#00c851',
         decreasing_fillcolor='#ff4444'
     )])
     
+    # Add moving average
     chart_data['ma_20'] = chart_data['close'].rolling(window=20).mean()
     fig.add_trace(go.Scatter(
         x=chart_data['datetime'],
         y=chart_data['ma_20'],
         mode='lines',
         name='MA(20)',
-        line=dict(color='#ff8800', width=2),
+        line=dict(color='#ff8800', width=2),  # Orange moving average
         opacity=0.8
     ))
     
+    # WHITE BACKGROUND Professional styling
     fig.update_layout(
         title=f"{pair_name} - Live Trading Chart",
         height=400,
         margin=dict(l=0, r=0, t=40, b=0),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        font=dict(color='#2d3748', size=12),
+        plot_bgcolor='white',  # WHITE background instead of black
+        paper_bgcolor='white',  # WHITE paper background
+        font=dict(color='#2d3748', size=12),  # Dark text for readability
         xaxis=dict(
             showgrid=True,
-            gridcolor='#e2e8f0',
+            gridcolor='#e2e8f0',  # Light gray grid
             gridwidth=0.5,
             type='date',
             rangeslider=dict(visible=False),
-            linecolor='#cbd5e0'
+            linecolor='#cbd5e0'  # Light border
         ),
         yaxis=dict(
             showgrid=True,
-            gridcolor='#e2e8f0',
+            gridcolor='#e2e8f0',  # Light gray grid
             gridwidth=0.5,
             side='right',
-            linecolor='#cbd5e0'
+            linecolor='#cbd5e0'  # Light border
         ),
         legend=dict(
             orientation="h",
@@ -393,13 +374,13 @@ def create_fx_trading_chart(pair_name="EUR/USD"):
             y=1.02,
             xanchor="right",
             x=1,
-            bgcolor='rgba(255,255,255,0.8)'
+            bgcolor='rgba(255,255,255,0.8)'  # Semi-transparent white background
         )
     )
     
     return fig
 
-# Data functions with SAFE number handling
+# Data functions with SAFE number handling (from main file)
 @st.cache_data(ttl=300)
 def get_daily_cash_flow():
     """Get daily cash flow with safe number formatting"""
@@ -419,6 +400,7 @@ def get_daily_cash_flow():
                 'percentage_color': 'positive'
             }
         
+        # Read data safely
         lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
         
         if lista_contas_sheet.shape[0] <= 101:
@@ -433,8 +415,10 @@ def get_daily_cash_flow():
         cash_flow_value = 0.0
         percentage_value = 0.0
         
+        # Search for values
         for col_index in range(lista_contas_sheet.shape[1]):
             try:
+                # Cash Flow from row 101
                 cell_value_101 = lista_contas_sheet.iloc[100, col_index]
                 if pd.notna(cell_value_101):
                     try:
@@ -444,6 +428,7 @@ def get_daily_cash_flow():
                     except (ValueError, TypeError):
                         pass
                 
+                # Percentage from row 102
                 cell_value_102 = lista_contas_sheet.iloc[101, col_index]
                 if pd.notna(cell_value_102):
                     try:
@@ -455,6 +440,7 @@ def get_daily_cash_flow():
             except Exception:
                 continue
         
+        # Safe formatting
         if cash_flow_value >= 0:
             cash_flow_text = f"EUR {cash_flow_value:,.0f}"
         else:
@@ -510,6 +496,7 @@ def get_executive_summary():
                 'last_updated': datetime.now().strftime("%H:%M")
             }
         
+        # Try to read real data
         try:
             tabelas_sheet = pd.read_excel(file_path, sheet_name="Tabelas", header=None)
             total_liquidity_raw = tabelas_sheet.iloc[91, 2]
@@ -558,6 +545,7 @@ def get_latest_variation():
         if lista_contas_sheet.shape[0] <= 100:
             return {'variation': 0.0, 'text': '+EUR 0 vs Yesterday', 'color': 'positive'}
         
+        # Search from right to left
         for col_index in range(lista_contas_sheet.shape[1] - 1, -1, -1):
             try:
                 cell_value = lista_contas_sheet.iloc[100, col_index]
@@ -620,6 +608,7 @@ def get_dynamic_liquidity_data():
         else:
             return get_sample_liquidity_data()
         
+        # Read safely
         try:
             lista_contas_sheet = pd.read_excel(file_path, sheet_name="Lista contas", header=None)
         except Exception:
@@ -629,6 +618,7 @@ def get_dynamic_liquidity_data():
         values = []
         found_columns = []
         
+        # Search for "VALOR EUR" columns
         for col_index in range(lista_contas_sheet.shape[1]):
             try:
                 linha2_value = lista_contas_sheet.iloc[1, col_index]
@@ -780,237 +770,11 @@ def get_bank_positions_from_tabelas():
     except:
         return get_fallback_banks()
 
-# NEW HOVER FUNCTIONS
-@st.cache_data(ttl=300)
-def get_bank_currency_details():
-    """
-    Obter detalhes das moedas por banco da sheet 'Tabelas'
-    - Linha 1, colunas B-O: Headers das moedas
-    - Linhas 2-14, coluna A: Nomes dos bancos
-    - Linhas 2-14, colunas B-O: Valores das moedas por banco
-    """
-    try:
-        excel_file = "TREASURY DASHBOARD.xlsx"
-        
-        if os.path.exists(excel_file):
-            file_path = excel_file
-        elif os.path.exists(f"data/{excel_file}"):
-            file_path = f"data/{excel_file}"
-        else:
-            return get_fallback_currency_data()
-        
-        # Ler a sheet "Tabelas"
-        tabelas_sheet = pd.read_excel(file_path, sheet_name="Tabelas", header=None)
-        
-        bank_currency_data = {}
-        
-        # Ler headers das moedas da linha 1 (índice 0), colunas B-O (índices 1-14)
-        currency_headers = []
-        for col_idx in range(1, 15):  # Colunas B (1) a O (14)
-            if col_idx < tabelas_sheet.shape[1]:
-                header_value = tabelas_sheet.iloc[0, col_idx]  # Linha 1 (índice 0)
-                if pd.notna(header_value) and str(header_value).strip():
-                    currency_headers.append((col_idx, str(header_value).strip()))
-        
-        # Procurar bancos nas linhas 2-14 (índices 1-13)
-        for row_idx in range(1, 14):  # Linhas 2-14 (índices 1-13)
-            try:
-                if row_idx >= tabelas_sheet.shape[0]:
-                    break
-                    
-                # Nome do banco na coluna A (índice 0)
-                bank_name = tabelas_sheet.iloc[row_idx, 0]
-                
-                if pd.notna(bank_name) and str(bank_name).strip():
-                    bank_name_clean = str(bank_name).strip()
-                    currency_data = {}
-                    total_eur_equivalent = 0
-                    
-                    # Procurar valores das moedas nas colunas B-O (usando os headers encontrados)
-                    for col_idx, currency_name in currency_headers:
-                        try:
-                            cell_value = tabelas_sheet.iloc[row_idx, col_idx]
-                            
-                            if pd.notna(cell_value) and cell_value != 0:
-                                try:
-                                    amount = float(cell_value)
-                                    if amount != 0:
-                                        currency_data[currency_name] = {
-                                            'amount': amount,
-                                            'formatted': f"{amount:,.0f}" if amount >= 1000 else f"{amount:.2f}"
-                                        }
-                                        
-                                        # Converter para EUR para cálculo de percentagem (aproximação)
-                                        if currency_name.upper() == 'EUR':
-                                            total_eur_equivalent += amount
-                                        elif currency_name.upper() == 'USD':
-                                            total_eur_equivalent += amount * 0.92
-                                        elif currency_name.upper() == 'GBP':
-                                            total_eur_equivalent += amount * 1.17
-                                        elif currency_name.upper() in ['SEK', 'NOK', 'DKK']:
-                                            total_eur_equivalent += amount * 0.09
-                                        else:
-                                            total_eur_equivalent += amount * 0.5
-                                
-                                except (ValueError, TypeError):
-                                    continue
-                        except Exception:
-                            continue
-                    
-                    # Só adicionar se tiver dados de moedas
-                    if currency_data:
-                        # Calcular percentagens
-                        for currency in currency_data:
-                            if total_eur_equivalent > 0:
-                                percentage = (currency_data[currency]['amount'] / total_eur_equivalent) * 100
-                                currency_data[currency]['percentage'] = f"{percentage:.1f}%"
-                        
-                        bank_currency_data[bank_name_clean] = {
-                            'currencies': currency_data,
-                            'total_currencies': len(currency_data),
-                            'main_currency': max(currency_data.keys(), key=lambda x: currency_data[x]['amount']) if currency_data else 'EUR'
-                        }
-                        
-            except Exception as e:
-                continue
-        
-        return bank_currency_data
-        
-    except Exception as e:
-        return get_fallback_currency_data()
-
-def get_fallback_currency_data():
-    """Dados de fallback para demonstração"""
-    return {
-        'ING Bank': {
-            'currencies': {
-                'EUR': {'amount': 8500000, 'formatted': '8,500,000', 'percentage': '75.2%'},
-                'USD': {'amount': 2300000, 'formatted': '2,300,000', 'percentage': '20.4%'},
-                'GBP': {'amount': 500000, 'formatted': '500,000', 'percentage': '4.4%'}
-            },
-            'total_currencies': 3,
-            'main_currency': 'EUR'
-        },
-        'Handelsbanken': {
-            'currencies': {
-                'EUR': {'amount': 3200000, 'formatted': '3,200,000', 'percentage': '68.1%'},
-                'USD': {'amount': 1200000, 'formatted': '1,200,000', 'percentage': '25.5%'},
-                'SEK': {'amount': 300000, 'formatted': '300,000', 'percentage': '6.4%'}
-            },
-            'total_currencies': 3,
-            'main_currency': 'EUR'
-        }
-    }
-
-def create_bank_hover_tooltip(bank_name, currency_data):
-    """Criar tooltip HTML para hover com informações das moedas"""
-    if not currency_data:
-        return f"<div>No currency data for {bank_name}</div>"
-    
-    currencies = currency_data.get('currencies', {})
-    total_currencies = currency_data.get('total_currencies', 0)
-    main_currency = currency_data.get('main_currency', 'EUR')
-    
-    tooltip_html = f"""
-    <div style="
-        background: white; 
-        border: 2px solid #007bff; 
-        border-radius: 8px; 
-        padding: 12px; 
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        font-family: 'Inter', sans-serif;
-        min-width: 280px;
-        max-width: 400px;
-    ">
-        <div style="
-            font-weight: 700; 
-            color: #2d3748; 
-            font-size: 1.1rem; 
-            margin-bottom: 8px;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 6px;
-        ">
-            💰 {bank_name}
-        </div>
-        
-        <div style="
-            font-size: 0.85rem; 
-            color: #718096; 
-            margin-bottom: 10px;
-        ">
-            {total_currencies} currencies • Main: {main_currency}
-        </div>
-        
-        <div style="font-size: 0.9rem;">
-    """
-    
-    sorted_currencies = sorted(currencies.items(), key=lambda x: x[1]['amount'], reverse=True)
-    
-    for currency, details in sorted_currencies:
-        amount_formatted = details['formatted']
-        percentage = details.get('percentage', '')
-        
-        if currency == 'EUR':
-            color = '#007bff'
-        elif currency == 'USD':
-            color = '#28a745'
-        elif currency == 'GBP':
-            color = '#dc3545'
-        else:
-            color = '#6c757d'
-        
-        tooltip_html += f"""
-        <div style="
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            padding: 4px 0;
-            border-bottom: 1px solid #f1f5f9;
-        ">
-            <div style="display: flex; align-items: center;">
-                <span style="
-                    background: {color}; 
-                    color: white; 
-                    padding: 2px 6px; 
-                    border-radius: 4px; 
-                    font-size: 0.75rem; 
-                    font-weight: 600;
-                    margin-right: 8px;
-                ">
-                    {currency}
-                </span>
-            </div>
-            <div style="text-align: right;">
-                <div style="font-weight: 600; color: #2d3748;">
-                    {amount_formatted}
-                </div>
-                {f'<div style="font-size: 0.75rem; color: #718096;">{percentage}</div>' if percentage else ''}
-            </div>
-        </div>
-        """
-    
-    tooltip_html += """
-        </div>
-        
-        <div style="
-            margin-top: 8px; 
-            padding-top: 8px; 
-            border-top: 1px solid #e2e8f0;
-            font-size: 0.75rem; 
-            color: #a0aec0;
-            text-align: center;
-        ">
-            💡 Real-time data from Lista contas
-        </div>
-    </div>
-    """
-    
-    return tooltip_html
-
 def create_professional_header():
     """Create header with SAFE number formatting"""
     summary = get_executive_summary()
     
+    # Ensure all values are properly formatted
     total_liquidity = summary.get('total_liquidity', 0.0)
     bank_accounts = summary.get('bank_accounts', 0)
     active_banks = summary.get('active_banks', 0)
@@ -1059,9 +823,10 @@ def create_navigation():
                 st.rerun()
 
 def show_homepage():
-    """Show homepage"""
+    """Show homepage with just header and navigation - content area for future development"""
     st.markdown('<div class="section-header">Treasury Operations Center - Homepage</div>', unsafe_allow_html=True)
     
+    # Future homepage content area
     st.markdown("""
     <div class="dashboard-section">
         <div class="section-content">
@@ -1088,19 +853,20 @@ def show_homepage():
     </div>
     """, unsafe_allow_html=True)
 
-def show_executive_overview_with_hover():
-    """Executive Overview com hover tooltips para mostrar moedas"""
+def show_executive_overview():
+    """Show executive overview with SAFE formatting"""
     st.markdown('<div class="section-header">Executive Summary</div>', unsafe_allow_html=True)
     
+    # Get data safely
     summary = get_executive_summary()
     variation = get_latest_variation()
     cash_flow = get_daily_cash_flow()
-    bank_currency_data = get_bank_currency_details()
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         change_class = "change-positive" if variation['color'] == 'positive' else "change-negative"
+        
         st.markdown(f"""
         <div class="summary-card">
             <h3>Total Liquidity</h3>
@@ -1129,6 +895,7 @@ def show_executive_overview_with_hover():
     
     with col4:
         percentage_class = "change-positive" if cash_flow['percentage_color'] == 'positive' else "change-negative"
+        
         st.markdown(f"""
         <div class="summary-card">
             <h3>Daily Cash Flow</h3>
@@ -1137,6 +904,7 @@ def show_executive_overview_with_hover():
         </div>
         """, unsafe_allow_html=True)
     
+    # Charts section
     col1, col2 = st.columns([2, 1])
     
     with col1:
@@ -1151,6 +919,12 @@ def show_executive_overview_with_hover():
         
         try:
             liquidity_data = get_dynamic_liquidity_data()
+            
+            if liquidity_data['source'].startswith('Sample'):
+                st.warning("Warning: Using sample data - Excel not found or error in reading")
+                with st.expander("Debug Info"):
+                    st.write("Trying to read from: TREASURY DASHBOARD.xlsx, sheet 'Lista contas'")
+                    st.write("Verify if file exists and sheet name is correct")
             
             fig = go.Figure()
             fig.add_trace(go.Scatter(
@@ -1173,269 +947,973 @@ def show_executive_overview_with_hover():
                 xaxis=dict(
                     showgrid=False,
                     gridcolor='#f1f5f9',
-                    tickformat='%d %b'
+                    tickformat='%d %b',
+                    tickmode='array',
+                    tickvals=liquidity_data['dates'],
+                    ticktext=[d.strftime('%d %b') for d in liquidity_data['dates']],
+                    tickangle=45,
+                    type='category'
                 ),
                 yaxis=dict(
                     showgrid=True, 
                     gridcolor='#f1f5f9', 
                     title='Million EUR',
-                    range=[0, 80]
+                    range=[0, 80],
+                    tickvals=[0, 10, 20, 30, 40, 50, 60, 70, 80],
+                    ticktext=['0', '10', '20', '30', '40', '50', '60', '70', '80']
                 )
             )
             
             st.plotly_chart(fig, use_container_width=True)
             
+            if 'columns_found' in liquidity_data:
+                st.caption(f"Data: {liquidity_data['source']} • Columns found: {', '.join(liquidity_data['columns_found'])} • Latest: EUR {liquidity_data['values'][-1]:.1f}M")
+            else:
+                st.caption(f"Data: {liquidity_data['source']} • {len(liquidity_data['dates'])} days • Latest: EUR {liquidity_data['values'][-1]:.1f}M")
+            
         except Exception as e:
             st.error(f"Error loading chart: {e}")
+            # Fallback chart
+            dates = pd.date_range(start=datetime.now() - timedelta(days=7), periods=7, freq='D')
+            values = [28.5, 30.2, 31.8, 29.4, 32.1, 31.7, 32.6]
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=dates, y=values, mode='lines', line=dict(color='#2b6cb0', width=3)))
+            fig.update_layout(height=300, margin=dict(l=0, r=0, t=20, b=0), yaxis=dict(range=[0, 80]))
+            st.plotly_chart(fig, use_container_width=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
         <div class="dashboard-section">
-            <div class="section-header">💰 Cash Positions</div>
+            <div class="section-header">Cash Positions</div>
             <div class="section-content" style="padding: 0;">
         """, unsafe_allow_html=True)
         
         banks_df = get_bank_positions_from_tabelas()
         
-        # CSS adicional para botões clicáveis e expansão
-        st.markdown("""
-        <style>
-        .bank-name-btn {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            font-weight: 600;
-            color: #495057;
-            font-size: 0.85rem;
-            cursor: pointer;
-            padding: 8px 12px;
-            text-align: left;
-            width: 100%;
-            transition: all 0.3s ease;
-            font-family: 'Inter', sans-serif;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        
-        .bank-name-btn:hover {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-            border-color: #0056b3;
-            color: white;
-            box-shadow: 0 2px 4px rgba(0,123,255,0.25);
-            transform: translateY(-1px);
-        }
-        
-        .bank-name-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        
-        .currencies-expanded {
-            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 8px;
-            border-left: 4px solid #007bff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        
-        .currency-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid #f1f3f4;
-            font-size: 0.75rem;
-        }
-        
-        .currency-item:last-child {
-            border-bottom: none;
-        }
-        
-        .currency-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1;
-        }
-        
-        .currency-flag {
-            font-size: 0.9rem;
-            width: 18px;
-            text-align: center;
-        }
-        
-        .currency-name {
-            font-weight: 600;
-            color: #495057;
-            font-size: 0.75rem;
-            min-width: 35px;
-        }
-        
-        .currency-value {
-            text-align: right;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .currency-amount {
-            font-weight: 600;
-            color: #262730;
-            font-size: 0.75rem;
-        }
-        
-        .currency-percentage {
-            font-size: 0.65rem;
-            color: #6c757d;
-        }
-        
-        .bank-subtitle {
-            font-size: 0.7rem;
-            color: #8e8ea0;
-            margin-top: 3px;
-            font-weight: 400;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # Criar HTML com nomes clicáveis e currencies expansíveis
         banks_html = """
-        <div style="height: 300px; overflow-y: auto; font-family: 'Inter', sans-serif;">
-        <script>
-        function toggleCurrencies(bankId) {
-            var element = document.getElementById('currencies_' + bankId);
-            if (element.style.display === 'none' || element.style.display === '') {
-                element.style.display = 'block';
-            } else {
-                element.style.display = 'none';
-            }
-        }
-        </script>
+        <div style="height: 300px; overflow-y: auto; padding: 1.5rem; font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;">
         """
         
-        bank_id = 0
         for _, row in banks_df.iterrows():
-            bank_name = row['Bank']
-            bank_id += 1
-            
-            # Procurar dados de moedas para este banco
-            currency_data = None
-            for stored_bank, data in bank_currency_data.items():
-                if stored_bank.lower() in bank_name.lower() or bank_name.lower() in stored_bank.lower():
-                    currency_data = data
-                    break
-            
-            # HTML para cada banco
             banks_html += f"""
-            <div style="padding: 0.75rem 1.5rem; border-bottom: 1px solid #f1f5f9;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="flex: 1;">
-                        <button class="bank-name-btn" onclick="toggleCurrencies({bank_id})">
-                            {bank_name}
-                        </button>
-                        <div class="bank-subtitle">
-                            {row['Currency']} • {row['Yield']}{f" • {currency_data['total_currencies']} currencies" if currency_data else ""}
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-weight: 700; color: #262730;">EUR {row['Balance']:.1f}M</div>
-                    </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f1f5f9;">
+                <div>
+                    <div style="font-weight: 700; color: #262730; font-size: 0.95rem;">{row['Bank']}</div>
+                    <div style="font-weight: 400; color: #8e8ea0; font-size: 0.8rem;">{row['Currency']} • {row['Yield']}</div>
                 </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 700; color: #262730;">EUR {row['Balance']:.1f}M</div>
+                </div>
+            </div>
             """
-            
-            # Se tem dados de moedas, adicionar secção expansível
-            if currency_data:
-                currencies = currency_data['currencies']
-                sorted_currencies = sorted(currencies.items(), key=lambda x: x[1]['amount'], reverse=True)
-                
-                banks_html += f"""
-                <div id="currencies_{bank_id}" class="currencies-expanded" style="display: none;">
-                """
-                
-                for currency, details in sorted_currencies:
-                    amount_formatted = details['formatted']
-                    percentage = details.get('percentage', '')
-                    
-                    # Emoji baseado na moeda
-                    if currency.upper() == 'EUR':
-                        emoji = "🇪🇺"
-                    elif currency.upper() == 'USD':
-                        emoji = "🇺🇸"
-                    elif currency.upper() == 'GBP':
-                        emoji = "🇬🇧"
-                    elif currency.upper() == 'SEK':
-                        emoji = "🇸🇪"
-                    elif currency.upper() == 'NOK':
-                        emoji = "🇳🇴"
-                    elif currency.upper() == 'PLN':
-                        emoji = "🇵🇱"
-                    elif currency.upper() == 'CHF':
-                        emoji = "🇨🇭"
-                    elif currency.upper() == 'DKK':
-                        emoji = "🇩🇰"
-                    elif currency.upper() == 'CAD':
-                        emoji = "🇨🇦"
-                    elif currency.upper() == 'AUD':
-                        emoji = "🇦🇺"
-                    else:
-                        emoji = "💱"
-                    
-                    banks_html += f"""
-                    <div class="currency-item">
-                        <div class="currency-left">
-                            <span class="currency-flag">{emoji}</span>
-                            <span class="currency-name">{currency}</span>
-                        </div>
-                        <div class="currency-value">
-                            <span class="currency-amount">{amount_formatted}</span>
-                            {f'<span class="currency-percentage"> ({percentage})</span>' if percentage else ''}
-                        </div>
-                    </div>
-                    """
-                
-                banks_html += "</div>"
-            
-            banks_html += "</div>"
         
         banks_html += "</div>"
         
-        # Mostrar o HTML interativo
         st.components.v1.html(banks_html, height=300, scrolling=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
-        
-        # Debug section compacta
-        with st.expander("🔍 Debug"):
-            if bank_currency_data:
-                st.caption(f"✅ Found currency data for {len(bank_currency_data)} banks")
-            else:
-                st.caption("❌ No currency data found")
     
+    # Executive insights
     st.markdown(f"""
     <div class="insight-box">
         <div class="insight-title">Executive Insight</div>
         <div class="insight-content">
             Current liquidity position at EUR {summary['total_liquidity']:.1f}M across {summary['active_banks']} banking relationships.
             Portfolio diversification optimized with {summary['bank_accounts']} active accounts.
+            Top 5 banks represent 65% of total liquidity, ensuring balanced concentration risk.
         </div>
     </div>
     """, unsafe_allow_html=True)
 
+def show_fx_risk():
+    """Enhanced FX Risk Management with live data and charts (from FX.py)"""
+    if st.button("🏠 Back to Home", key="back_home_fx"):
+        st.session_state.current_page = 'overview'
+        st.rerun()
+    
+    st.markdown('<div class="section-header">FX Risk Management - Live Trading</div>', unsafe_allow_html=True)
+    
+    # Get live FX data
+    fx_rates, is_live = get_live_fx_rates()
+    
+    if 'fx_deals' not in st.session_state:
+        st.session_state.fx_deals = []
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        # Live FX Rates Section
+        status_indicator = "🟢 LIVE" if is_live else "🟡 DEMO"
+        
+        st.markdown(f"""
+        <div class="dashboard-section">
+            <div class="section-header">
+                Live FX Rates vs EUR
+                <span class="status-indicator status-good">{status_indicator}</span>
+            </div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Auto-refresh button and controls
+        col_refresh, col_auto, col_time = st.columns([1, 1, 2])
+        with col_refresh:
+            if st.button("🔄 Refresh", key="refresh_fx"):
+                st.cache_data.clear()
+                st.rerun()
+        
+        with col_auto:
+            auto_refresh_rates = st.checkbox("Auto 🔄", value=False, key="auto_refresh_rates", help="Auto-refresh every 30 seconds")
+        
+        with col_time:
+            current_time = datetime.now().strftime("%H:%M:%S")
+            st.caption(f"📡 Last update: {current_time} {'(Live API)' if is_live else '(Demo Mode)'}")
+        
+        # Auto-refresh logic for FX rates (every 30 seconds to avoid being too slow)
+        if auto_refresh_rates:
+            st.info("🔄 Auto-refresh enabled (30s intervals)")
+            time.sleep(30)
+            st.rerun()
+        
+        # Display FX rates in grid
+        fx_cols = st.columns(3)
+        for i, (pair, data) in enumerate(fx_rates.items()):
+            with fx_cols[i % 3]:
+                color_class = "change-positive" if data['color'] == 'positive' else "change-negative"
+                
+                # Add blinking effect for live data
+                blink_style = "animation: blink 2s infinite;" if is_live else ""
+                
+                st.markdown(f"""
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; {blink_style}">
+                    <div style="font-size: 0.875rem; color: #718096; font-weight: 500;">{pair}</div>
+                    <div style="font-size: 1.5rem; font-weight: 600; color: #2d3748; margin: 0.5rem 0;">{data['rate']:.4f}</div>
+                    <div class="{color_class}" style="font-size: 0.875rem; font-weight: 500;">{data['change_text']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+        
+        # TRADING CHART SECTION
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">
+                📈 Live Trading Charts
+                <span class="status-indicator status-good">Professional</span>
+            </div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Chart selector
+        chart_cols = st.columns([2, 1, 1])
+        with chart_cols[0]:
+            selected_pair = st.selectbox(
+                "Select Currency Pair:", 
+                ["EUR/USD", "GBP/EUR", "USD/JPY", "EUR/GBP", "EUR/CHF"],
+                key="chart_pair"
+            )
+        
+        with chart_cols[1]:
+            timeframe = st.selectbox(
+                "Timeframe:", 
+                ["1H", "4H", "1D", "1W"],
+                key="chart_timeframe"
+            )
+        
+        with chart_cols[2]:
+            auto_refresh_chart = st.checkbox("Auto Chart 🔄", value=False, key="auto_refresh_chart", help="Auto-refresh chart every 60 seconds")
+        
+        # Create and display the trading chart
+        trading_fig = create_fx_trading_chart(selected_pair)
+        st.plotly_chart(trading_fig, use_container_width=True)
+        
+        # Chart info
+        st.caption(f"📊 {selected_pair} • Timeframe: {timeframe} • Candlestick + MA(20) • Last update: {datetime.now().strftime('%H:%M:%S')}")
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    with col2:
+        # FX Deal Request Form
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">🚀 FX Deal Request</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        with st.form("fx_deal_form"):
+            sell_currency = st.selectbox("Sell Currency", ['EUR', 'USD', 'GBP', 'CHF', 'SEK', 'NOK', 'CAD', 'AUD', 'MYR', 'IDR'])
+            buy_currency = st.selectbox("Buy Currency", ['USD', 'GBP', 'CHF', 'SEK', 'NOK', 'CAD', 'AUD', 'MYR', 'IDR', 'EUR'])
+            amount = st.number_input("Amount", min_value=1000, value=100000, step=1000)
+            contract_type = st.selectbox("Contract Type", ['Spot', 'Forward', 'Swap', 'Option'])
+            value_date = st.date_input("Value Date", value=datetime.now().date())
+            
+            # Special note for SEK
+            if sell_currency == 'SEK' or buy_currency == 'SEK':
+                st.warning("⚠️ SEK Trading: Historically challenging rates - proceed with caution")
+            
+            comments = st.text_area("Comments", placeholder="Optional comments...")
+            
+            submitted = st.form_submit_button("🚀 Submit FX Deal", use_container_width=True)
+            
+            if submitted:
+                if sell_currency != buy_currency:
+                    new_deal = {
+                        'id': len(st.session_state.fx_deals) + 1,
+                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        'sell_currency': sell_currency,
+                        'buy_currency': buy_currency,
+                        'amount': amount,
+                        'contract_type': contract_type,
+                        'value_date': value_date.strftime("%Y-%m-%d"),
+                        'comments': comments,
+                        'status': 'Pending',
+                        'user': 'Treasury User',
+                        'rate_type': 'Live' if is_live else 'Demo'
+                    }
+                    st.session_state.fx_deals.append(new_deal)
+                    st.success("✅ FX Deal submitted successfully!")
+                    st.rerun()
+                else:
+                    st.error("❌ Sell and Buy currencies must be different!")
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+        
+        # Market Status Widget - Markets you actually work with
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">🌍 Trading Markets Status</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Your actual trading markets with correct timezones
+        now = datetime.now()
+        markets = {
+            "🇺🇸 New York": (14, 30, 21, 0),      # 14:30-21:00 UTC (NYSE)
+            "🇬🇧 London": (8, 0, 16, 30),         # 08:00-16:30 UTC (LSE)
+            "🇲🇾 Kuala Lumpur": (1, 0, 9, 0),     # 01:00-09:00 UTC (MYR trading)
+            "🇮🇩 Jakarta": (2, 0, 9, 0),          # 02:00-09:00 UTC (IDR trading)
+            "🇨🇦 Toronto": (14, 30, 21, 0),       # 14:30-21:00 UTC (CAD trading)
+            "🇦🇺 Sydney": (22, 0, 7, 0),          # 22:00-07:00 UTC (AUD trading)
+            "🇸🇪 Stockholm": (8, 0, 16, 30),      # 08:00-16:30 UTC (SEK - your challenging currency!)
+            "🇳🇴 Oslo": (8, 0, 16, 30)            # 08:00-16:30 UTC (NOK - part of EU market)
+        }
+        
+        # Special highlight for SEK since you mentioned trading difficulties
+        for market, (open_h, open_m, close_h, close_m) in markets.items():
+            current_minutes = now.hour * 60 + now.minute
+            open_minutes = open_h * 60 + open_m
+            close_minutes = close_h * 60 + close_m
+            
+            if market in ["🇦🇺 Sydney"]:  # Sydney crosses midnight
+                is_open = now.hour >= open_h or now.hour < close_h
+            else:
+                is_open = open_minutes <= current_minutes <= close_minutes
+            
+            status = "🟢 OPEN" if is_open else "🔴 CLOSED"
+            
+            # Special highlighting for SEK
+            if "Stockholm" in market:
+                st.markdown(f"**{market}**: {status} ⚠️ *SEK Trading - Challenging pair*")
+            elif "Oslo" in market:
+                st.markdown(f"**{market}**: {status} ℹ️ *NOK - EU Market hours*")
+            else:
+                st.markdown(f"**{market}**: {status}")
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # Pending FX Deals
+    if st.session_state.fx_deals:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">📋 Pending FX Deals</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        for deal in st.session_state.fx_deals:
+            if deal['status'] == 'Pending':
+                col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+                
+                with col1:
+                    st.write(f"**{deal['sell_currency']}/{deal['buy_currency']}**")
+                    st.write(f"Amount: {deal['amount']:,}")
+                
+                with col2:
+                    st.write(f"Type: {deal['contract_type']}")
+                    st.write(f"Value Date: {deal['value_date']}")
+                
+                with col3:
+                    st.write(f"Requested: {deal['timestamp']}")
+                    st.write(f"By: {deal['user']}")
+                    if 'rate_type' in deal:
+                        st.write(f"Rate: {deal['rate_type']}")
+                
+                with col4:
+                    if st.button("✅ Approve", key=f"approve_{deal['id']}"):
+                        for d in st.session_state.fx_deals:
+                            if d['id'] == deal['id']:
+                                d['status'] = 'Approved'
+                        st.success("Deal approved!")
+                        st.rerun()
+                    
+                    if st.button("❌ Reject", key=f"reject_{deal['id']}"):
+                        st.session_state.fx_deals = [d for d in st.session_state.fx_deals if d['id'] != deal['id']]
+                        st.error("Deal rejected!")
+                        st.rerun()
+                
+                st.divider()
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+
+def show_daily_operations():
+    """Show Daily Operations dashboard"""
+    if st.button("🏠 Back to Home", key="back_home_operations"):
+        st.session_state.current_page = 'overview'
+        st.rerun()
+    
+    st.markdown('<div class="section-header">Daily Operations Center</div>', unsafe_allow_html=True)
+    
+    # Initialize session states
+    if 'operational_workflows' not in st.session_state:
+        st.session_state.operational_workflows = []
+    if 'intraday_transfers' not in st.session_state:
+        st.session_state.intraday_transfers = []
+    if 'pcard_requests' not in st.session_state:
+        st.session_state.pcard_requests = []
+    
+    # TOP ROW: Operational Workflows + Intraday Transfers
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">📋 Operational Workflows</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Workflow Form
+        with st.form("workflow_form", clear_on_submit=True):
+            subject = st.text_input("Subject", placeholder="Enter task subject...")
+            workflow_date = st.date_input("Date", value=datetime.now().date())
+            notes = st.text_area("Notes", placeholder="Additional details and notes...", height=80)
+            
+            submitted = st.form_submit_button("➕ Add Workflow", use_container_width=True)
+            
+            if submitted and subject.strip():
+                new_workflow = {
+                    'id': len(st.session_state.operational_workflows) + 1,
+                    'subject': subject.strip(),
+                    'date': workflow_date.strftime("%Y-%m-%d"),
+                    'notes': notes.strip(),
+                    'status': 'Pending',
+                    'created': datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.operational_workflows.append(new_workflow)
+                st.success("Workflow added successfully!")
+                st.rerun()
+        
+        # Display Workflows
+        if st.session_state.operational_workflows:
+            st.markdown("**Active Workflows:**")
+            
+            for workflow in st.session_state.operational_workflows:
+                col_a, col_b, col_c = st.columns([3, 1, 1])
+                
+                with col_a:
+                    tooltip_text = f"Notes: {workflow['notes']}\nCreated: {workflow['created']}"
+                    
+                    st.markdown(f"""
+                    <div style="background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid {'#ffc107' if workflow['status'] == 'Pending' else '#28a745'};" title="{tooltip_text}">
+                        <strong>{workflow['subject']}</strong><br>
+                        <small style="color: #6c757d;">{workflow['date']}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col_b:
+                    st.write(f"**{workflow['status']}**")
+                
+                with col_c:
+                    if workflow['status'] == 'Pending':
+                        if st.button("✅", key=f"complete_{workflow['id']}", help="Mark as Concluded"):
+                            for w in st.session_state.operational_workflows:
+                                if w['id'] == workflow['id']:
+                                    w['status'] = 'Concluded'
+                            st.rerun()
+                    else:
+                        if st.button("🔄", key=f"reopen_{workflow['id']}", help="Mark as Pending"):
+                            for w in st.session_state.operational_workflows:
+                                if w['id'] == workflow['id']:
+                                    w['status'] = 'Pending'
+                            st.rerun()
+        else:
+            st.info("No workflows created yet.")
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">💸 Intraday Transfers</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        companies = [
+            "Holding Company Ltd",
+            "Operations Co",
+            "European Subsidiary",
+            "North America Inc", 
+            "Asia Pacific Ltd",
+            "Treasury Center",
+            "Investment Vehicle",
+            "Trading Entity",
+            "Service Company",
+            "Technology Division"
+        ]
+        
+        with st.form("transfer_form", clear_on_submit=True):
+            from_company = st.selectbox("From", companies, key="from_comp")
+            to_company = st.selectbox("To", companies, key="to_comp")
+            transfer_date = st.date_input("Date", value=datetime.now().date(), key="transfer_date")
+            amount = st.number_input("Amount (EUR)", min_value=1000, value=100000, step=1000, key="transfer_amount")
+            
+            transfer_submitted = st.form_submit_button("💾 Save Transfer", use_container_width=True)
+            
+            if transfer_submitted:
+                if from_company != to_company:
+                    new_transfer = {
+                        'id': len(st.session_state.intraday_transfers) + 1,
+                        'from_company': from_company,
+                        'to_company': to_company,
+                        'date': transfer_date.strftime("%Y-%m-%d"),
+                        'amount': amount,
+                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
+                    }
+                    st.session_state.intraday_transfers.append(new_transfer)
+                    st.success("Transfer saved successfully!")
+                    st.rerun()
+                else:
+                    st.error("From and To companies must be different!")
+        
+        # Display Transfers
+        if st.session_state.intraday_transfers:
+            st.markdown("**Recent Transfers:**")
+            
+            recent_transfers = st.session_state.intraday_transfers[-5:]
+            for transfer in reversed(recent_transfers):
+                st.markdown(f"""
+                <div style="background: #e8f4fd; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid #007bff;">
+                    <strong>{transfer['from_company']} → {transfer['to_company']}</strong><br>
+                    <small>EUR {transfer['amount']:,} • {transfer['date']}</small>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No transfers recorded yet.")
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # MIDDLE ROW: Cashflow vs Actuals Chart
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">📊 Cashflow vs Actuals</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    st.info("📌 Chart placeholder - You can paste your Python chart code here!")
+    
+    sample_data = {
+        'Categories': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        'Forecast': [2.5, 3.2, 2.8, 4.1],
+        'Actual': [2.8, 2.9, 3.1, 3.8]
+    }
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        name='Forecast',
+        x=sample_data['Categories'],
+        y=sample_data['Forecast'],
+        marker_color='lightblue'
+    ))
+    fig.add_trace(go.Bar(
+        name='Actual',
+        x=sample_data['Categories'],
+        y=sample_data['Actual'],
+        marker_color='darkblue'
+    ))
+    
+    fig.update_layout(
+        height=250,
+        margin=dict(l=0, r=0, t=20, b=0),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        barmode='group',
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        yaxis=dict(title='Million EUR')
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    st.caption("💡 Replace this with your cashflow chart code")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # BOTTOM ROW: P-Card Requests
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">💳 P-Card Requests</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.markdown("**Manual Entry** (Future: AI Agent)")
+        
+        with st.form("pcard_form", clear_on_submit=True):
+            requester_name = st.text_input("Requester Name", placeholder="John Doe")
+            requested_amount = st.number_input("Amount Requested (EUR)", min_value=1, value=500, step=50)
+            request_reason = st.text_area("Reason", placeholder="Business purpose...", height=60)
+            
+            pcard_submitted = st.form_submit_button("📨 Add Request", use_container_width=True)
+            
+            if pcard_submitted and requester_name.strip():
+                new_request = {
+                    'id': len(st.session_state.pcard_requests) + 1,
+                    'requester': requester_name.strip(),
+                    'amount': requested_amount,
+                    'reason': request_reason.strip(),
+                    'status': 'Pending',
+                    'card_number': '',
+                    'request_date': datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.pcard_requests.append(new_request)
+                st.success("P-Card request added!")
+                st.rerun()
+    
+    with col2:
+        st.markdown("**Pending Requests**")
+        
+        if st.session_state.pcard_requests:
+            for request in st.session_state.pcard_requests:
+                if request['status'] == 'Pending':
+                    col_a, col_b, col_c = st.columns([2, 1, 1])
+                    
+                    with col_a:
+                        st.markdown(f"""
+                        <div style="background: #fff3cd; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid #ffc107;">
+                            <strong>{request['requester']}</strong><br>
+                            <small>EUR {request['amount']} • {request['reason'][:30]}{'...' if len(request['reason']) > 30 else ''}</small><br>
+                            <small style="color: #6c757d;">{request['request_date']}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with col_b:
+                        card_number = st.text_input("Card #", key=f"card_{request['id']}", placeholder="1234-5678")
+                    
+                    with col_c:
+                        if st.button("✅ Send", key=f"approve_card_{request['id']}"):
+                            if card_number.strip():
+                                for r in st.session_state.pcard_requests:
+                                    if r['id'] == request['id']:
+                                        r['status'] = 'Approved'
+                                        r['card_number'] = card_number.strip()
+                                st.success(f"Card number sent to {request['requester']}!")
+                                st.rerun()
+                            else:
+                                st.error("Please enter card number!")
+                
+                elif request['status'] == 'Approved':
+                    st.markdown(f"""
+                    <div style="background: #d4edda; padding: 0.5rem; border-radius: 4px; margin: 0.25rem 0; border-left: 3px solid #28a745;">
+                        <strong>✅ {request['requester']}</strong> - Card #{request['card_number']} sent<br>
+                        <small>EUR {request['amount']} • {request['request_date']}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.info("No P-Card requests yet.")
+        
+        st.markdown("""
+        <div style="background: #e2e3e5; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+            <strong>🤖 Future Enhancement:</strong><br>
+            <small>AI Agent will automatically read emails and populate requests here. 
+            Integration with email parsing for automatic requester detection and amount extraction.</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
+def show_investment_portfolio():
+    """Show Investment Portfolio dashboard with tracking functionality"""
+    if st.button("🏠 Back to Home", key="back_home_investments"):
+        st.session_state.current_page = 'overview'
+        st.rerun()
+    
+    st.markdown('<div class="section-header">Investment Portfolio Tracking</div>', unsafe_allow_html=True)
+    
+    # Initialize session state for investments
+    if 'investment_transactions' not in st.session_state:
+        st.session_state.investment_transactions = []
+    
+    # TOP ROW: Transaction Form + Summary Cards
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">📝 Add Investment Transaction</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Investment Transaction Form
+        with st.form("investment_form", clear_on_submit=True):
+            transaction_date = st.date_input("Date", value=datetime.now().date())
+            
+            transaction_type = st.selectbox("Type", [
+                "Deposit",
+                "Interest", 
+                "Redemption",
+                "Account Balance Update"
+            ])
+            
+            from_entity = st.selectbox("From", [
+                "Group Holding",
+                "Treasury Center",
+                "Investment Account",
+                "MMF",
+                "TD",
+                "External Source"
+            ])
+            
+            to_entity = st.selectbox("To", [
+                "MMF",
+                "TD", 
+                "Account",
+                "Group Holding",
+                "Treasury Center",
+                "External Destination"
+            ])
+            
+            amount = st.number_input("Amount (EUR)", min_value=0.01, value=1000.00, step=100.00)
+            
+            notes = st.text_area("Notes (Optional)", placeholder="Additional transaction details...", height=60)
+            
+            submitted = st.form_submit_button("💰 Add Transaction", use_container_width=True)
+            
+            if submitted:
+                new_transaction = {
+                    'id': len(st.session_state.investment_transactions) + 1,
+                    'date': transaction_date.strftime("%Y-%m-%d"),
+                    'type': transaction_type,
+                    'from': from_entity,
+                    'to': to_entity,
+                    'amount': float(amount),
+                    'notes': notes.strip(),
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.investment_transactions.append(new_transaction)
+                st.success(f"{transaction_type} of EUR {amount:,.2f} added successfully!")
+                st.rerun()
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    with col2:
+        # Calculate summary metrics
+        transactions = st.session_state.investment_transactions
+        
+        # Current Balances: (Deposits + Interest + Updates) - Redemptions
+        deposits = sum(t['amount'] for t in transactions if t['type'] == 'Deposit')
+        interests = sum(t['amount'] for t in transactions if t['type'] == 'Interest')
+        updates = sum(t['amount'] for t in transactions if t['type'] == 'Account Balance Update')
+        redemptions = sum(t['amount'] for t in transactions if t['type'] == 'Redemption')
+        
+        current_balance = deposits + interests + updates - redemptions
+        interest_earned = interests
+        
+        # Summary Cards
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">💰 Portfolio Summary</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        # Current Balances Card
+        st.markdown(f"""
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #007bff;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.2rem; margin-right: 0.5rem;">🏛️</span>
+                <span style="font-weight: 600; color: #495057;">Current Balances</span>
+            </div>
+            <div style="font-size: 2rem; font-weight: 700; color: #2d3748;">EUR {current_balance:,.2f}</div>
+            <div style="font-size: 0.9rem; color: #6c757d; margin-top: 0.5rem;">
+                Deposits: EUR {deposits:,.2f} | Updates: EUR {updates:,.2f} | Redemptions: EUR {redemptions:,.2f}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Interest Earned Card
+        st.markdown(f"""
+        <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #ffc107;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.2rem; margin-right: 0.5rem;">🟡</span>
+                <span style="font-weight: 600; color: #495057;">Interest Earned</span>
+            </div>
+            <div style="font-size: 2rem; font-weight: 700; color: #2d3748;">EUR {interest_earned:,.2f}</div>
+            <div style="font-size: 0.9rem; color: #6c757d; margin-top: 0.5rem;">
+                Total interest payments received
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # MIDDLE ROW: Total Value Summary Table
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">📋 Investment Summary by Product</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    if transactions:
+        # Calculate balances by product (To field)
+        product_summary = {}
+        
+        for transaction in transactions:
+            product = transaction['to']
+            if product not in product_summary:
+                product_summary[product] = {
+                    'deposits': 0,
+                    'interest': 0,
+                    'updates': 0,
+                    'redemptions': 0,
+                    'last_activity': transaction['date']
+                }
+            
+            # Update amounts by type
+            if transaction['type'] == 'Deposit':
+                product_summary[product]['deposits'] += transaction['amount']
+            elif transaction['type'] == 'Interest':
+                product_summary[product]['interest'] += transaction['amount']
+            elif transaction['type'] == 'Account Balance Update':
+                product_summary[product]['updates'] += transaction['amount']
+            elif transaction['type'] == 'Redemption':
+                product_summary[product]['redemptions'] += transaction['amount']
+            
+            # Update last activity (keep most recent)
+            if transaction['date'] > product_summary[product]['last_activity']:
+                product_summary[product]['last_activity'] = transaction['date']
+        
+        # Create summary table
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
+        
+        with col1:
+            st.markdown("**Product**")
+        with col2:
+            st.markdown("**Current Balance**")
+        with col3:
+            st.markdown("**Accrued Interest**")
+        with col4:
+            st.markdown("**Last Activity**")
+        
+        st.markdown("---")
+        
+        # Display each product
+        for product, data in product_summary.items():
+            if product in ['MMF', 'TD', 'Account']:  # Only show investment products
+                current_balance = data['deposits'] + data['interest'] + data['updates'] - data['redemptions']
+                accrued_interest = data['interest']
+                last_activity = data['last_activity']
+                
+                col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
+                
+                with col1:
+                    if product == 'MMF':
+                        st.markdown("**💰 MMF**")
+                    elif product == 'TD':
+                        st.markdown("**🏦 TD**")
+                    else:
+                        st.markdown(f"**📊 {product}**")
+                
+                with col2:
+                    st.markdown(f"EUR {current_balance:,.2f}")
+                
+                with col3:
+                    st.markdown(f"EUR {accrued_interest:,.2f}")
+                
+                with col4:
+                    formatted_date = datetime.strptime(last_activity, "%Y-%m-%d").strftime("%d/%m/%Y")
+                    st.markdown(f"{formatted_date}")
+                
+                st.markdown("---")
+    
+    else:
+        st.info("No investment transactions recorded yet. Add your first transaction above!")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # BOTTOM ROW: Investment Growth Chart
+    st.markdown("""
+    <div class="dashboard-section">
+        <div class="section-header">📈 Total Value Growth</div>
+        <div class="section-content">
+    """, unsafe_allow_html=True)
+    
+    if transactions:
+        # Calculate cumulative value over time
+        # Sort transactions by date
+        sorted_transactions = sorted(transactions, key=lambda x: x['date'])
+        
+        dates = []
+        cumulative_values = []
+        running_total = 0
+        
+        for transaction in sorted_transactions:
+            transaction_date = datetime.strptime(transaction['date'], "%Y-%m-%d")
+            
+            # Add/subtract based on transaction type
+            if transaction['type'] in ['Deposit', 'Interest', 'Account Balance Update']:
+                running_total += transaction['amount']
+            elif transaction['type'] == 'Redemption':
+                running_total -= transaction['amount']
+            
+            dates.append(transaction_date)
+            cumulative_values.append(running_total)
+        
+        # Create the growth chart
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
+            x=dates,
+            y=cumulative_values,
+            mode='lines+markers',
+            name='Total Investment Value',
+            line=dict(color='#007bff', width=3),
+            fill='tonexty',
+            fillcolor='rgba(0, 123, 255, 0.1)',
+            marker=dict(size=6, color='#007bff'),
+            hovertemplate='<b>%{x|%d %b %Y}</b><br>EUR %{y:,.2f}<extra></extra>'
+        ))
+        
+        fig.update_layout(
+            height=350,
+            margin=dict(l=0, r=0, t=20, b=0),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            showlegend=False,
+            xaxis=dict(
+                title='Date',
+                showgrid=True,
+                gridcolor='#f1f5f9',
+                tickformat='%d %b'
+            ),
+            yaxis=dict(
+                title='EUR',
+                showgrid=True,
+                gridcolor='#f1f5f9',
+                tickformat=',.0f'
+            )
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Chart summary
+        if cumulative_values:
+            total_growth = cumulative_values[-1] - cumulative_values[0] if len(cumulative_values) > 1 else cumulative_values[0]
+            growth_percentage = (total_growth / cumulative_values[0] * 100) if cumulative_values[0] != 0 else 0
+            
+            st.caption(f"📊 Portfolio Growth: EUR {total_growth:,.2f} ({growth_percentage:+.1f}%) • Latest Value: EUR {cumulative_values[-1]:,.2f} • Transactions: {len(transactions)}")
+    
+    else:
+        # Show placeholder chart
+        st.info("📈 Investment growth chart will appear here once you add transactions")
+        
+        # Sample chart to show structure
+        sample_dates = pd.date_range(start=datetime.now() - timedelta(days=90), periods=10, freq='10D')
+        sample_values = [3000, 3200, 3150, 3400, 3600, 3800, 4100, 4050, 4300, 4500]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=sample_dates,
+            y=sample_values,
+            mode='lines',
+            name='Sample Growth',
+            line=dict(color='#28a745', width=2, dash='dash'),
+            opacity=0.6
+        ))
+        
+        fig.update_layout(
+            height=350,
+            margin=dict(l=0, r=0, t=20, b=0),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            showlegend=False,
+            xaxis=dict(title='Date', showgrid=True, gridcolor='#f1f5f9'),
+            yaxis=dict(title='EUR', showgrid=True, gridcolor='#f1f5f9')
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("💡 Sample chart - Add your investment transactions to see real growth")
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # Transaction History (Optional - can be expandable)
+    if transactions:
+        with st.expander(f"📋 Transaction History ({len(transactions)} transactions)"):
+            # Show recent transactions in a nice format
+            recent_transactions = sorted(transactions, key=lambda x: x['timestamp'], reverse=True)[:10]
+            
+            for transaction in recent_transactions:
+                col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 2])
+                
+                with col1:
+                    formatted_date = datetime.strptime(transaction['date'], "%Y-%m-%d").strftime("%d/%m/%Y")
+                    st.text(formatted_date)
+                
+                with col2:
+                    # Color code by type
+                    if transaction['type'] == 'Deposit':
+                        st.markdown(f"🟢 **{transaction['type']}**")
+                    elif transaction['type'] == 'Interest':
+                        st.markdown(f"🟡 **{transaction['type']}**")
+                    elif transaction['type'] == 'Redemption':
+                        st.markdown(f"🔴 **{transaction['type']}**")
+                    else:
+                        st.markdown(f"🔵 **{transaction['type']}**")
+                
+                with col3:
+                    st.text(transaction['from'])
+                
+                with col4:
+                    st.text(transaction['to'])
+                
+                with col5:
+                    st.text(f"EUR {transaction['amount']:,.2f}")
+                
+                if transaction.get('notes'):
+                    st.caption(f"📝 {transaction['notes']}")
+                
+                st.markdown("---")
+
 # Main application
 def main():
-    """Main application with professional interface and hover functionality"""
+    """Main application with professional interface"""
     
+    # Create professional header
     create_professional_header()
+    
+    # Navigation
     create_navigation()
     
+    # Route to pages
     if st.session_state.current_page == 'overview':
         show_homepage()
     elif st.session_state.current_page == 'executive':
-        show_executive_overview_with_hover()
+        show_executive_overview()
+    elif st.session_state.current_page == 'fx_risk':
+        show_fx_risk()
+    elif st.session_state.current_page == 'operations':
+        show_daily_operations()
+    elif st.session_state.current_page == 'investments':
+        show_investment_portfolio()
     else:
         st.error(f"Unknown page: {st.session_state.current_page}")
         show_homepage()
