@@ -1203,41 +1203,62 @@ def show_executive_overview_with_hover():
         st.markdown("""
         <style>
         .bank-name-btn {
-            background: none;
-            border: none;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
             font-weight: 700;
             color: #262730;
             font-size: 0.95rem;
             cursor: pointer;
-            padding: 0;
+            padding: 4px 8px;
             text-align: left;
             width: 100%;
-            transition: color 0.2s ease;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
         }
         
         .bank-name-btn:hover {
+            background: #f8f9fa;
+            border-color: #007bff;
             color: #007bff;
         }
         
         .currencies-expanded {
             background: #f8f9fa;
             border-radius: 6px;
-            padding: 8px 12px;
+            padding: 12px;
             margin-top: 8px;
             border-left: 3px solid #007bff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
         .currency-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 2px 0;
-            font-size: 0.85rem;
+            padding: 6px 0;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.8rem;
+        }
+        
+        .currency-item:last-child {
+            border-bottom: none;
+        }
+        
+        .currency-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .currency-flag {
+            font-size: 0.9rem;
         }
         
         .currency-name {
             font-weight: 600;
             color: #495057;
+            font-size: 0.8rem;
         }
         
         .currency-value {
@@ -1247,11 +1268,20 @@ def show_executive_overview_with_hover():
         .currency-amount {
             font-weight: 600;
             color: #262730;
+            font-size: 0.8rem;
         }
         
         .currency-percentage {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #6c757d;
+            margin-top: 1px;
+        }
+        
+        .bank-subtitle {
+            font-size: 0.75rem;
+            color: #8e8ea0;
+            margin-top: 2px;
+            font-weight: 400;
         }
         </style>
         """, unsafe_allow_html=True)
