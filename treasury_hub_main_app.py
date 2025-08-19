@@ -1236,7 +1236,7 @@ def show_executive_overview_with_hover():
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 6px 0;
+            padding: 8px 0;
             border-bottom: 1px solid #e9ecef;
             font-size: 0.8rem;
         }
@@ -1248,33 +1248,40 @@ def show_executive_overview_with_hover():
         .currency-left {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            flex: 1;
         }
         
         .currency-flag {
-            font-size: 0.9rem;
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
         }
         
         .currency-name {
             font-weight: 600;
             color: #495057;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
+            min-width: 40px;
         }
         
         .currency-value {
             text-align: right;
+            flex-shrink: 0;
         }
         
         .currency-amount {
             font-weight: 600;
             color: #262730;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
+            line-height: 1.2;
         }
         
         .currency-percentage {
             font-size: 0.7rem;
             color: #6c757d;
-            margin-top: 1px;
+            margin-top: 2px;
+            line-height: 1;
         }
         
         .bank-subtitle {
