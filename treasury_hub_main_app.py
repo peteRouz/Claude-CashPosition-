@@ -1194,109 +1194,166 @@ def show_executive_overview_with_hover():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">💰 Cash Positions</div>
-            <div class="section-content">
+            <div class="section-content" style="padding: 0;">
         """, unsafe_allow_html=True)
         
         banks_df = get_bank_positions_from_tabelas()
         
-        # Container com altura fixa para manter proporção
-        container = st.container()
+        # CSS adicional para botões clicáveis e expansão
+        st.markdown("""
+        <style>
+        .bank-name-btn {
+            background: none;
+            border: none;
+            font-weight: 700;
+            color: #262730;
+            font-size: 0.95rem;
+            cursor: pointer;
+            padding: 0;
+            text-align: left;
+            width: 100%;
+            transition: color 0.2s ease;
+        }
         
-        with container:
-            # Para cada banco, criar layout compacto
-            for _, row in banks_df.iterrows():
-                bank_name = row['Bank']
+        .bank-name-btn:hover {
+            color: #007bff;
+        }
+        
+        .currencies-expanded {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            border-left: 3px solid #007bff;
+        }
+        
+        .currency-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+            font-size: 0.85rem;
+        }
+        
+        .currency-name {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .currency-value {
+            text-align: right;
+        }
+        
+        .currency-amount {
+            font-weight: 600;
+            color: #262730;
+        }
+        
+        .currency-percentage {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Criar HTML com nomes clicáveis e currencies expansíveis
+        banks_html = """
+        <div style="height: 300px; overflow-y: auto; font-family: 'Inter', sans-serif;">
+        <script>
+        function toggleCurrencies(bankId) {
+            var element = document.getElementById('currencies_' + bankId);
+            if (element.style.display === 'none' || element.style.display === '') {
+                element.style.display = 'block';
+            } else {
+                element.style.display = 'none';
+            }
+        }
+        </script>
+        """
+        
+        bank_id = 0
+        for _, row in banks_df.iterrows():
+            bank_name = row['Bank']
+            bank_id += 1
+            
+            # Procurar dados de moedas para este banco
+            currency_data = None
+            for stored_bank, data in bank_currency_data.items():
+                if stored_bank.lower() in bank_name.lower() or bank_name.lower() in stored_bank.lower():
+                    currency_data = data
+                    break
+            
+            # HTML para cada banco
+            banks_html += f"""
+            <div style="padding: 0.75rem 1.5rem; border-bottom: 1px solid #f1f5f9;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <button class="bank-name-btn" onclick="toggleCurrencies({bank_id})">
+                            {bank_name} {'▼' if currency_data else ''}
+                        </button>
+                        <div style="font-weight: 400; color: #8e8ea0; font-size: 0.8rem; margin-top: 2px;">
+                            {row['Currency']} • {row['Yield']}{f" • {currency_data['total_currencies']} currencies" if currency_data else ""}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 700; color: #262730;">EUR {row['Balance']:.1f}M</div>
+                    </div>
+                </div>
+            """
+            
+            # Se tem dados de moedas, adicionar secção expansível
+            if currency_data:
+                currencies = currency_data['currencies']
+                sorted_currencies = sorted(currencies.items(), key=lambda x: x[1]['amount'], reverse=True)
                 
-                # Procurar dados de moedas para este banco
-                currency_data = None
-                for stored_bank, data in bank_currency_data.items():
-                    if stored_bank.lower() in bank_name.lower() or bank_name.lower() in stored_bank.lower():
-                        currency_data = data
-                        break
+                banks_html += f"""
+                <div id="currencies_{bank_id}" class="currencies-expanded" style="display: none;">
+                """
                 
-                # Layout principal do banco - mais compacto
-                col_info, col_balance = st.columns([2.5, 1])
-                
-                with col_info:
-                    st.markdown(f"**{bank_name}**")
-                    if currency_data:
-                        total_currencies = currency_data['total_currencies']
-                        st.caption(f"{row['Currency']} • {row['Yield']} • {total_currencies} currencies")
+                for currency, details in sorted_currencies:
+                    amount_formatted = details['formatted']
+                    percentage = details.get('percentage', '')
+                    
+                    # Emoji baseado na moeda
+                    if currency.upper() == 'EUR':
+                        emoji = "🇪🇺"
+                    elif currency.upper() == 'USD':
+                        emoji = "🇺🇸"
+                    elif currency.upper() == 'GBP':
+                        emoji = "🇬🇧"
+                    elif currency.upper() == 'SEK':
+                        emoji = "🇸🇪"
+                    elif currency.upper() == 'NOK':
+                        emoji = "🇳🇴"
+                    elif currency.upper() == 'PLN':
+                        emoji = "🇵🇱"
+                    elif currency.upper() == 'CHF':
+                        emoji = "🇨🇭"
                     else:
-                        st.caption(f"{row['Currency']} • {row['Yield']}")
-                
-                with col_balance:
-                    st.markdown(f"**EUR {row['Balance']:.1f}M**")
-                
-                # Se tem dados de moedas, mostrar botão compacto para expandir
-                if currency_data:
-                    # Usar um botão toggle em vez de expander para controle melhor
-                    button_key = f"toggle_{bank_name.replace(' ', '_')}"
+                        emoji = "💱"
                     
-                    if f"show_{button_key}" not in st.session_state:
-                        st.session_state[f"show_{button_key}"] = False
-                    
-                    # Botão compacto para toggle
-                    col_btn, col_empty = st.columns([2, 1])
-                    with col_btn:
-                        if st.button(
-                            f"{'▼' if st.session_state[f'show_{button_key}'] else '▶'} {currency_data['total_currencies']} currencies",
-                            key=button_key,
-                            help=f"Click to {'hide' if st.session_state[f'show_{button_key}'] else 'show'} currency breakdown"
-                        ):
-                            st.session_state[f"show_{button_key}"] = not st.session_state[f"show_{button_key}"]
-                            st.rerun()
-                    
-                    # Mostrar moedas se expandido
-                    if st.session_state[f"show_{button_key}"]:
-                        currencies = currency_data['currencies']
-                        
-                        # Container para as moedas com background diferente
-                        st.markdown("""
-                        <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 6px; margin: 0.5rem 0;">
-                        """, unsafe_allow_html=True)
-                        
-                        # Ordenar moedas por montante (maior primeiro)
-                        sorted_currencies = sorted(currencies.items(), key=lambda x: x[1]['amount'], reverse=True)
-                        
-                        # Mostrar moedas em formato compacto
-                        for currency, details in sorted_currencies:
-                            amount_formatted = details['formatted']
-                            percentage = details.get('percentage', '')
-                            
-                            # Layout compacto para cada moeda
-                            col_curr_name, col_curr_val = st.columns([1, 2])
-                            
-                            with col_curr_name:
-                                # Emoji baseado na moeda
-                                if currency.upper() == 'EUR':
-                                    emoji = "🇪🇺"
-                                elif currency.upper() == 'USD':
-                                    emoji = "🇺🇸"
-                                elif currency.upper() == 'GBP':
-                                    emoji = "🇬🇧"
-                                elif currency.upper() == 'SEK':
-                                    emoji = "🇸🇪"
-                                elif currency.upper() == 'NOK':
-                                    emoji = "🇳🇴"
-                                else:
-                                    emoji = "💱"
-                                
-                                st.markdown(f"{emoji} **{currency}**")
-                            
-                            with col_curr_val:
-                                st.markdown(f"**{amount_formatted}**")
-                                if percentage:
-                                    st.caption(f"{percentage}")
-                        
-                        st.markdown("</div>", unsafe_allow_html=True)
+                    banks_html += f"""
+                    <div class="currency-item">
+                        <div class="currency-name">{emoji} {currency}</div>
+                        <div class="currency-value">
+                            <div class="currency-amount">{amount_formatted}</div>
+                            {f'<div class="currency-percentage">{percentage}</div>' if percentage else ''}
+                        </div>
+                    </div>
+                    """
                 
-                # Linha separadora mais sutil
-                st.markdown("<hr style='margin: 1rem 0; border: 0; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
+                banks_html += "</div>"
+            
+            banks_html += "</div>"
+        
+        banks_html += "</div>"
+        
+        # Mostrar o HTML interativo
+        st.components.v1.html(banks_html, height=300, scrolling=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         
-        # Debug section mais compacta
+        # Debug section compacta
         with st.expander("🔍 Debug"):
             if bank_currency_data:
                 st.caption(f"✅ Found currency data for {len(bank_currency_data)} banks")
