@@ -1268,20 +1268,20 @@ def show_executive_overview_with_hover():
         .currency-value {
             text-align: right;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
         
         .currency-amount {
             font-weight: 600;
             color: #262730;
             font-size: 0.85rem;
-            line-height: 1.2;
         }
         
         .currency-percentage {
             font-size: 0.7rem;
             color: #6c757d;
-            margin-top: 2px;
-            line-height: 1;
         }
         
         .bank-subtitle {
@@ -1382,8 +1382,8 @@ def show_executive_overview_with_hover():
                             <span class="currency-name">{currency}</span>
                         </div>
                         <div class="currency-value">
-                            <div class="currency-amount">{amount_formatted}</div>
-                            {f'<div class="currency-percentage">{percentage}</div>' if percentage else ''}
+                            <span class="currency-amount">{amount_formatted}</span>
+                            {f'<span class="currency-percentage"> ({percentage})</span>' if percentage else ''}
                         </div>
                     </div>
                     """
