@@ -1203,42 +1203,51 @@ def show_executive_overview_with_hover():
         st.markdown("""
         <style>
         .bank-name-btn {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            font-weight: 700;
-            color: #262730;
-            font-size: 0.95rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.85rem;
             cursor: pointer;
-            padding: 4px 8px;
+            padding: 8px 12px;
             text-align: left;
             width: 100%;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             font-family: 'Inter', sans-serif;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         
         .bank-name-btn:hover {
-            background: #f8f9fa;
-            border-color: #007bff;
-            color: #007bff;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            border-color: #0056b3;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,123,255,0.25);
+            transform: translateY(-1px);
+        }
+        
+        .bank-name-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         
         .currencies-expanded {
-            background: #f8f9fa;
-            border-radius: 6px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
             padding: 12px;
             margin-top: 8px;
-            border-left: 3px solid #007bff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 4px solid #007bff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         
         .currency-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
-            font-size: 0.8rem;
+            padding: 6px 0;
+            border-bottom: 1px solid #f1f3f4;
+            font-size: 0.75rem;
         }
         
         .currency-item:last-child {
@@ -1253,16 +1262,16 @@ def show_executive_overview_with_hover():
         }
         
         .currency-flag {
-            font-size: 1rem;
-            width: 20px;
+            font-size: 0.9rem;
+            width: 18px;
             text-align: center;
         }
         
         .currency-name {
             font-weight: 600;
             color: #495057;
-            font-size: 0.85rem;
-            min-width: 40px;
+            font-size: 0.75rem;
+            min-width: 35px;
         }
         
         .currency-value {
@@ -1276,18 +1285,18 @@ def show_executive_overview_with_hover():
         .currency-amount {
             font-weight: 600;
             color: #262730;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
         }
         
         .currency-percentage {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #6c757d;
         }
         
         .bank-subtitle {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #8e8ea0;
-            margin-top: 2px;
+            margin-top: 3px;
             font-weight: 400;
         }
         </style>
