@@ -1319,9 +1319,9 @@ def show_executive_overview_with_hover():
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="flex: 1;">
                         <button class="bank-name-btn" onclick="toggleCurrencies({bank_id})">
-                            {bank_name} {'▼' if currency_data else ''}
+                            {bank_name}
                         </button>
-                        <div style="font-weight: 400; color: #8e8ea0; font-size: 0.8rem; margin-top: 2px;">
+                        <div class="bank-subtitle">
                             {row['Currency']} • {row['Yield']}{f" • {currency_data['total_currencies']} currencies" if currency_data else ""}
                         </div>
                     </div>
@@ -1359,12 +1359,21 @@ def show_executive_overview_with_hover():
                         emoji = "🇵🇱"
                     elif currency.upper() == 'CHF':
                         emoji = "🇨🇭"
+                    elif currency.upper() == 'DKK':
+                        emoji = "🇩🇰"
+                    elif currency.upper() == 'CAD':
+                        emoji = "🇨🇦"
+                    elif currency.upper() == 'AUD':
+                        emoji = "🇦🇺"
                     else:
                         emoji = "💱"
                     
                     banks_html += f"""
                     <div class="currency-item">
-                        <div class="currency-name">{emoji} {currency}</div>
+                        <div class="currency-left">
+                            <span class="currency-flag">{emoji}</span>
+                            <span class="currency-name">{currency}</span>
+                        </div>
                         <div class="currency-value">
                             <div class="currency-amount">{amount_formatted}</div>
                             {f'<div class="currency-percentage">{percentage}</div>' if percentage else ''}
