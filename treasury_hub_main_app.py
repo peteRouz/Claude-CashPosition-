@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Treasury HUB - Versão Consolidada
+Treasury HUB - Versão com Yahoo Finance (DADOS REAIS)
 =================================
-CFO-grade interface com dados reais do banco + FX Trading melhorado
-Features: Dados reais Excel, FX rates ao vivo, Charts profissionais, Status de mercado
+CFO-grade interface com dados reais do banco + FX Trading com dados REAIS do Yahoo Finance
+Features: Dados reais Excel, FX rates REAIS, Charts REAIS, Status de mercado
 """
 
 import streamlit as st
@@ -19,6 +19,7 @@ from pathlib import Path
 import json
 import requests
 import time
+import yfinance as yf  # ← NOVA BIBLIOTECA ADICIONADA
 
 # Configure page
 st.set_page_config(
@@ -215,10 +216,192 @@ st.markdown("""
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'overview'
 
-# Enhanced FX functions with live data (from FX.py)
+# ==================== YAHOO FINANCE FUNCTIONS (REAL DATA) ====================
+
+@st.cache_data(ttl=300)  # Cache por 5 minutos
+def get_real_fx_data_yahoo(pair_symbol, days=30):
+    """
+    Obter dados REAIS do Yahoo Finance
+    pair_symbol: 'EUR/USD', 'GBP/EUR', etc.
+    """
+    try:
+        # Mapeamento dos pares para símbolos do Yahoo
+        pair_mapping = {
+            "EUR/USD": "EURUSD=X",
+            "GBP/EUR": "GBPEUR=X", 
+            "USD/JPY": "USDJPY=X",
+            "EUR/GBP": "EURGBP=X",
+            "EUR/CHF": "EURCHF=X",
+            "EUR/SEK": "EURSEK=X",
+            "EUR/NOK": "EURNOK=X",
+            "EUR/CAD": "EURCAD=X",
+            "USD/EUR": "USDEUR=X",
+            "CHF/EUR": "CHFEUR=X",
+            "SEK/EUR": "SEKEUR=X",
+            "NOK/EUR": "NOKEUR=X",
+            "CAD/EUR": "CADEUR=X"
+        }
+        
+        yahoo_symbol = pair_mapping.get(pair_symbol, "EURUSD=X")
+        
+        # Buscar dados
+        ticker = yf.Ticker(yahoo_symbol)
+        
+        # Últimos X dias com intervalos de 1 hora
+        data = ticker.history(period=f"{days}d", interval="1h")
+        
+        if data.empty:
+            st.warning(f"⚠️ Sem dados Yahoo Finance para {pair_symbol}, usando dados demo")
+            return generate_trading_chart_data()  # Fallback para dados demo
+        
+        # Converter para formato do gráfico
+        chart_data = []
+        for index, row in data.iterrows():
+            chart_data.append({
+                'datetime': index,
+                'open': float(row['Open']),
+                'high': float(row['High']),
+                'low': float(row['Low']),
+                'close': float(row['Close']),
+                'volume': float(row['Volume']) if 'Volume' in row else 0
+            })
+        
+        return pd.DataFrame(chart_data)
+        
+    except Exception as e:
+        st.warning(f"⚠️ Erro ao buscar dados reais: {str(e)} - Usando dados demo")
+        return generate_trading_chart_data()  # Fallback
+
+@st.cache_data(ttl=60)  # Cache por 1 minuto
+def get_real_live_fx_rates():
+    """Obter taxas FX REAIS com variações calculadas do Yahoo Finance"""
+    try:
+        # Lista de pares para monitorar
+        pairs = {
+            'USD/EUR': 'USDEUR=X',
+            'GBP/EUR': 'GBPEUR=X', 
+            'CHF/EUR': 'CHFEUR=X',
+            'SEK/EUR': 'SEKEUR=X',
+            'NOK/EUR': 'NOKEUR=X',
+            'CAD/EUR': 'CADEUR=X'
+        }
+        
+        fx_data = {}
+        
+        for pair_name, yahoo_symbol in pairs.items():
+            try:
+                ticker = yf.Ticker(yahoo_symbol)
+                
+                # Buscar dados dos últimos 2 dias para calcular variação REAL
+                hist = ticker.history(period="2d", interval="1d")
+                
+                if len(hist) >= 2:
+                    current_rate = float(hist['Close'].iloc[-1])
+                    previous_rate = float(hist['Close'].iloc[-2])
+                    
+                    # Calcular variação REAL
+                    change_pct = ((current_rate - previous_rate) / previous_rate) * 100
+                    
+                    fx_data[pair_name] = {
+                        'rate': current_rate,
+                        'change': change_pct,
+                        'color': 'positive' if change_pct >= 0 else 'negative',
+                        'change_text': f"+{change_pct:.2f}%" if change_pct >= 0 else f"{change_pct:.2f}%",
+                        'source': 'Yahoo Finance REAL',
+                        'raw_rate': current_rate
+                    }
+                    
+            except Exception as e:
+                # Se falhar, continua para o próximo par
+                continue
+        
+        if fx_data:
+            return fx_data, True  # True = dados reais
+        else:
+            st.warning("⚠️ Yahoo Finance indisponível, usando dados demo")
+            return get_demo_fx_rates(), False  # Fallback
+            
+    except Exception as e:
+        st.warning(f"⚠️ Erro API Yahoo Finance: {str(e)}")
+        return get_demo_fx_rates(), False
+
+def create_real_fx_trading_chart(pair_name="EUR/USD"):
+    """Criar gráfico com dados REAIS do Yahoo Finance"""
+    
+    # Buscar dados reais
+    chart_data = get_real_fx_data_yahoo(pair_name)
+    
+    # Verificar se temos dados válidos
+    if chart_data.empty:
+        st.error("❌ Sem dados disponíveis")
+        return go.Figure()
+    
+    # Criar candlestick chart com dados REAIS
+    fig = go.Figure(data=[go.Candlestick(
+        x=chart_data['datetime'],
+        open=chart_data['open'],
+        high=chart_data['high'],
+        low=chart_data['low'],
+        close=chart_data['close'],
+        name=pair_name,
+        increasing_line_color='#00c851',
+        decreasing_line_color='#ff4444',
+        increasing_fillcolor='#00c851',
+        decreasing_fillcolor='#ff4444'
+    )])
+    
+    # Adicionar média móvel REAL
+    if len(chart_data) >= 20:
+        chart_data['ma_20'] = chart_data['close'].rolling(window=20).mean()
+        fig.add_trace(go.Scatter(
+            x=chart_data['datetime'],
+            y=chart_data['ma_20'],
+            mode='lines',
+            name='MA(20)',
+            line=dict(color='#ff8800', width=2),
+            opacity=0.8
+        ))
+    
+    # Styling profissional
+    fig.update_layout(
+        title=f"{pair_name} - 📊 DADOS REAIS Yahoo Finance",
+        height=400,
+        margin=dict(l=0, r=0, t=40, b=0),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(color='#2d3748', size=12),
+        xaxis=dict(
+            showgrid=True,
+            gridcolor='#e2e8f0',
+            gridwidth=0.5,
+            type='date',
+            rangeslider=dict(visible=False),
+            linecolor='#cbd5e0'
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='#e2e8f0',
+            gridwidth=0.5,
+            side='right',
+            linecolor='#cbd5e0'
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            bgcolor='rgba(255,255,255,0.8)'
+        )
+    )
+    
+    return fig
+
+# ==================== FALLBACK FUNCTIONS (mantidas como backup) ====================
+
 @st.cache_data(ttl=60)  # Cache for 1 minute
 def get_live_fx_rates():
-    """Get live FX rates from free API"""
+    """Get live FX rates from free API (FALLBACK)"""
     try:
         # Using exchangerate-api.com (free tier: 1500 requests/month)
         url = "https://api.exchangerate-api.com/v4/latest/EUR"
@@ -288,7 +471,7 @@ def get_demo_fx_rates():
     }
 
 def generate_trading_chart_data(base_price=1.0857, days=30):
-    """Generate realistic forex chart data"""
+    """Generate realistic forex chart data (FALLBACK)"""
     dates = pd.date_range(start=datetime.now() - timedelta(days=days), periods=days*24, freq='H')
     
     # Generate realistic price movements
@@ -316,7 +499,7 @@ def generate_trading_chart_data(base_price=1.0857, days=30):
     return pd.DataFrame(ohlc_data)
 
 def create_fx_trading_chart(pair_name="EUR/USD"):
-    """Create professional trading chart with WHITE background"""
+    """Create professional trading chart with WHITE background (FALLBACK)"""
     # Generate data
     chart_data = generate_trading_chart_data()
     
@@ -347,7 +530,7 @@ def create_fx_trading_chart(pair_name="EUR/USD"):
     
     # WHITE BACKGROUND Professional styling
     fig.update_layout(
-        title=f"{pair_name} - Live Trading Chart",
+        title=f"{pair_name} - Demo Trading Chart",
         height=400,
         margin=dict(l=0, r=0, t=40, b=0),
         plot_bgcolor='white',  # WHITE background instead of black
@@ -1029,15 +1212,15 @@ def show_executive_overview():
     """, unsafe_allow_html=True)
 
 def show_fx_risk():
-    """Enhanced FX Risk Management with live data and charts (from FX.py)"""
+    """Enhanced FX Risk Management with REAL DATA from Yahoo Finance"""
     if st.button("🏠 Back to Home", key="back_home_fx"):
         st.session_state.current_page = 'overview'
         st.rerun()
     
-    st.markdown('<div class="section-header">FX Risk Management - Live Trading</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🚀 FX Risk Management - REAL DATA Trading</div>', unsafe_allow_html=True)
     
-    # Get live FX data
-    fx_rates, is_live = get_live_fx_rates()
+    # Get REAL FX data from Yahoo Finance
+    fx_rates, is_live = get_real_live_fx_rates()
     
     if 'fx_deals' not in st.session_state:
         st.session_state.fx_deals = []
@@ -1045,13 +1228,13 @@ def show_fx_risk():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        # Live FX Rates Section
-        status_indicator = "🟢 LIVE" if is_live else "🟡 DEMO"
+        # REAL FX Rates Section
+        status_indicator = "🟢 YAHOO FINANCE REAL" if is_live else "🟡 DEMO FALLBACK"
         
         st.markdown(f"""
         <div class="dashboard-section">
             <div class="section-header">
-                Live FX Rates vs EUR
+                📊 REAL FX Rates vs EUR (Yahoo Finance)
                 <span class="status-indicator status-good">{status_indicator}</span>
             </div>
             <div class="section-content">
@@ -1060,7 +1243,7 @@ def show_fx_risk():
         # Auto-refresh button and controls
         col_refresh, col_auto, col_time = st.columns([1, 1, 2])
         with col_refresh:
-            if st.button("🔄 Refresh", key="refresh_fx"):
+            if st.button("🔄 Refresh REAL Data", key="refresh_fx"):
                 st.cache_data.clear()
                 st.rerun()
         
@@ -1069,7 +1252,7 @@ def show_fx_risk():
         
         with col_time:
             current_time = datetime.now().strftime("%H:%M:%S")
-            st.caption(f"📡 Last update: {current_time} {'(Live API)' if is_live else '(Demo Mode)'}")
+            st.caption(f"📡 Last update: {current_time} {'(Yahoo Finance REAL)' if is_live else '(Demo Mode)'}")
         
         # Auto-refresh logic for FX rates (every 30 seconds to avoid being too slow)
         if auto_refresh_rates:
@@ -1077,7 +1260,7 @@ def show_fx_risk():
             time.sleep(30)
             st.rerun()
         
-        # Display FX rates in grid
+        # Display REAL FX rates in grid
         fx_cols = st.columns(3)
         for i, (pair, data) in enumerate(fx_rates.items()):
             with fx_cols[i % 3]:
@@ -1091,17 +1274,18 @@ def show_fx_risk():
                     <div style="font-size: 0.875rem; color: #718096; font-weight: 500;">{pair}</div>
                     <div style="font-size: 1.5rem; font-weight: 600; color: #2d3748; margin: 0.5rem 0;">{data['rate']:.4f}</div>
                     <div class="{color_class}" style="font-size: 0.875rem; font-weight: 500;">{data['change_text']}</div>
+                    {'<div style="font-size: 0.7rem; color: #28a745;">✅ REAL DATA</div>' if is_live else '<div style="font-size: 0.7rem; color: #ffc107;">⚠️ DEMO DATA</div>'}
                 </div>
                 """, unsafe_allow_html=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
         
-        # TRADING CHART SECTION
+        # REAL TRADING CHART SECTION
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">
-                📈 Live Trading Charts
-                <span class="status-indicator status-good">Professional</span>
+                📈 REAL Trading Charts (Yahoo Finance)
+                <span class="status-indicator status-good">REAL DATA</span>
             </div>
             <div class="section-content">
         """, unsafe_allow_html=True)
@@ -1111,7 +1295,7 @@ def show_fx_risk():
         with chart_cols[0]:
             selected_pair = st.selectbox(
                 "Select Currency Pair:", 
-                ["EUR/USD", "GBP/EUR", "USD/JPY", "EUR/GBP", "EUR/CHF"],
+                ["EUR/USD", "GBP/EUR", "USD/JPY", "EUR/GBP", "EUR/CHF", "EUR/SEK", "EUR/NOK", "EUR/CAD"],
                 key="chart_pair"
             )
         
@@ -1125,12 +1309,12 @@ def show_fx_risk():
         with chart_cols[2]:
             auto_refresh_chart = st.checkbox("Auto Chart 🔄", value=False, key="auto_refresh_chart", help="Auto-refresh chart every 60 seconds")
         
-        # Create and display the trading chart
-        trading_fig = create_fx_trading_chart(selected_pair)
+        # Create and display the REAL trading chart
+        trading_fig = create_real_fx_trading_chart(selected_pair)
         st.plotly_chart(trading_fig, use_container_width=True)
         
         # Chart info
-        st.caption(f"📊 {selected_pair} • Timeframe: {timeframe} • Candlestick + MA(20) • Last update: {datetime.now().strftime('%H:%M:%S')}")
+        st.caption(f"📊 {selected_pair} • Timeframe: {timeframe} • Candlestick + MA(20) • REAL DATA Yahoo Finance • Last update: {datetime.now().strftime('%H:%M:%S')}")
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
@@ -1170,7 +1354,7 @@ def show_fx_risk():
                         'comments': comments,
                         'status': 'Pending',
                         'user': 'Treasury User',
-                        'rate_type': 'Live' if is_live else 'Demo'
+                        'rate_type': 'Yahoo Finance REAL' if is_live else 'Demo'
                     }
                     st.session_state.fx_deals.append(new_deal)
                     st.success("✅ FX Deal submitted successfully!")
