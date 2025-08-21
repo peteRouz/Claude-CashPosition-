@@ -216,6 +216,80 @@ st.markdown("""
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'overview'
 
+# ==================== EMAIL SIMULATION FUNCTIONS ====================
+
+def simulate_email_approval(transaction):
+    """Simulate sending approval email - Shows email content on screen"""
+    
+    st.markdown("### 📧 EMAIL SENT (Simulation)")
+    
+    # Email content simulation
+    email_content = f"""
+    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 2rem; margin: 1rem 0; font-family: Arial, sans-serif;">
+        <div style="background: #007bff; color: white; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+            <h3 style="margin: 0; font-size: 1.2rem;">🏢 Treasury Investment Approval Required</h3>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <strong>To:</strong> {transaction['approver_email']}<br>
+            <strong>From:</strong> treasury@company.com<br>
+            <strong>Subject:</strong> Investment Transaction Approval Required - EUR {transaction['amount']:,.2f}
+        </div>
+        
+        <div style="background: white; padding: 1.5rem; border-radius: 6px; border-left: 4px solid #28a745;">
+            <h4 style="color: #28a745; margin-top: 0;">Transaction Details</h4>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 0.5rem; font-weight: bold;">Transaction Type:</td>
+                    <td style="padding: 0.5rem;">{transaction['type']}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 0.5rem; font-weight: bold;">Amount:</td>
+                    <td style="padding: 0.5rem; color: #007bff; font-weight: bold;">EUR {transaction['amount']:,.2f}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 0.5rem; font-weight: bold;">From:</td>
+                    <td style="padding: 0.5rem;">{transaction['from']}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 0.5rem; font-weight: bold;">To:</td>
+                    <td style="padding: 0.5rem;">{transaction['to']}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 0.5rem; font-weight: bold;">Date:</td>
+                    <td style="padding: 0.5rem;">{transaction['date']}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 0.5rem; font-weight: bold;">Requested by:</td>
+                    <td style="padding: 0.5rem;">{transaction['requested_by']}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 0.5rem; font-weight: bold;">Notes:</td>
+                    <td style="padding: 0.5rem;">{transaction['notes'] if transaction['notes'] else 'None'}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div style="margin-top: 2rem; text-align: center;">
+            <div style="background: #28a745; color: white; padding: 1rem; border-radius: 6px; display: inline-block; margin: 0.5rem; text-decoration: none; font-weight: bold;">
+                ✅ APPROVE TRANSACTION
+            </div>
+            <div style="background: #dc3545; color: white; padding: 1rem; border-radius: 6px; display: inline-block; margin: 0.5rem; text-decoration: none; font-weight: bold;">
+                ❌ REJECT TRANSACTION
+            </div>
+        </div>
+        
+        <div style="margin-top: 1.5rem; font-size: 0.9rem; color: #6c757d; border-top: 1px solid #dee2e6; padding-top: 1rem;">
+            <strong>Note:</strong> This is a simulation. In production, the approver would receive this email with clickable approve/reject buttons that update the system automatically.
+        </div>
+    </div>
+    """
+    
+    st.markdown(email_content, unsafe_allow_html=True)
+    
+    st.success("📧 Email sent successfully to approver!")
+
 # ==================== YAHOO FINANCE FUNCTIONS (REAL DATA) ====================
 
 @st.cache_data(ttl=300)  # Cache por 5 minutos
@@ -1727,16 +1801,18 @@ def show_daily_operations():
     st.markdown("</div></div>", unsafe_allow_html=True)
 
 def show_investment_portfolio():
-    """Show Investment Portfolio dashboard with tracking functionality"""
+    """Show Investment Portfolio dashboard with tracking functionality and EMAIL APPROVAL"""
     if st.button("🏠 Back to Home", key="back_home_investments"):
         st.session_state.current_page = 'overview'
         st.rerun()
     
-    st.markdown('<div class="section-header">Investment Portfolio Tracking</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">📧 Investment Portfolio Tracking - With Email Approval</div>', unsafe_allow_html=True)
     
     # Initialize session state for investments
     if 'investment_transactions' not in st.session_state:
         st.session_state.investment_transactions = []
+    if 'pending_approvals' not in st.session_state:
+        st.session_state.pending_approvals = []
     
     # TOP ROW: Transaction Form + Summary Cards
     col1, col2 = st.columns([1, 1])
@@ -1744,11 +1820,11 @@ def show_investment_portfolio():
     with col1:
         st.markdown("""
         <div class="dashboard-section">
-            <div class="section-header">📝 Add Investment Transaction</div>
+            <div class="section-header">📝 Add Investment Transaction - With Email Approval</div>
             <div class="section-content">
         """, unsafe_allow_html=True)
         
-        # Investment Transaction Form
+        # Investment Transaction Form with EMAIL APPROVAL
         with st.form("investment_form", clear_on_submit=True):
             transaction_date = st.date_input("Date", value=datetime.now().date())
             
@@ -1781,28 +1857,60 @@ def show_investment_portfolio():
             
             notes = st.text_area("Notes (Optional)", placeholder="Additional transaction details...", height=60)
             
+            # EMAIL APPROVAL SECTION
+            st.markdown("### 📧 Email Approval")
+            
+            col_approval1, col_approval2 = st.columns([1, 1])
+            with col_approval1:
+                send_for_approval = st.checkbox("Send for Approval", value=False, help="Send email to approver before processing")
+            
+            with col_approval2:
+                approver_email = st.text_input("Approver Email", 
+                                             value="cfo@company.com", 
+                                             disabled=not send_for_approval,
+                                             help="Email of person who will approve this transaction")
+            
+            if send_for_approval:
+                st.info("📧 This transaction will be sent for email approval before being processed")
+            
             submitted = st.form_submit_button("💰 Add Transaction", use_container_width=True)
             
             if submitted:
                 new_transaction = {
-                    'id': len(st.session_state.investment_transactions) + 1,
+                    'id': len(st.session_state.investment_transactions) + len(st.session_state.pending_approvals) + 1,
                     'date': transaction_date.strftime("%Y-%m-%d"),
                     'type': transaction_type,
                     'from': from_entity,
                     'to': to_entity,
                     'amount': float(amount),
                     'notes': notes.strip(),
-                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M")
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    'status': 'Pending Approval' if send_for_approval else 'Approved',
+                    'approver_email': approver_email if send_for_approval else None,
+                    'requested_by': 'Treasury User'
                 }
-                st.session_state.investment_transactions.append(new_transaction)
-                st.success(f"{transaction_type} of EUR {amount:,.2f} added successfully!")
+                
+                if send_for_approval:
+                    # Add to pending approvals
+                    st.session_state.pending_approvals.append(new_transaction)
+                    
+                    # SIMULATE EMAIL SENDING
+                    simulate_email_approval(new_transaction)
+                    
+                    st.success(f"📧 {transaction_type} of EUR {amount:,.2f} sent for approval to {approver_email}!")
+                else:
+                    # Add directly to transactions
+                    st.session_state.investment_transactions.append(new_transaction)
+                    st.success(f"💰 {transaction_type} of EUR {amount:,.2f} added successfully!")
+                
                 st.rerun()
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
     with col2:
-        # Calculate summary metrics
+        # Calculate summary metrics (ONLY APPROVED TRANSACTIONS)
         transactions = st.session_state.investment_transactions
+        pending_count = len(st.session_state.pending_approvals)
         
         # Current Balances: (Deposits + Interest + Updates) - Redemptions
         deposits = sum(t['amount'] for t in transactions if t['type'] == 'Deposit')
@@ -1816,7 +1924,7 @@ def show_investment_portfolio():
         # Summary Cards
         st.markdown("""
         <div class="dashboard-section">
-            <div class="section-header">💰 Portfolio Summary</div>
+            <div class="section-header">💰 Portfolio Summary (Approved Only)</div>
             <div class="section-content">
         """, unsafe_allow_html=True)
         
@@ -1845,6 +1953,82 @@ def show_investment_portfolio():
             <div style="font-size: 0.9rem; color: #6c757d; margin-top: 0.5rem;">
                 Total interest payments received
             </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Pending Approvals Card
+        if pending_count > 0:
+            pending_amount = sum(t['amount'] for t in st.session_state.pending_approvals)
+            st.markdown(f"""
+            <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #ff8800;">
+                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">⏳</span>
+                    <span style="font-weight: 600; color: #495057;">Pending Approvals</span>
+                </div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #2d3748;">{pending_count} transactions</div>
+                <div style="font-size: 0.9rem; color: #6c757d; margin-top: 0.5rem;">
+                    Total value: EUR {pending_amount:,.2f}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # PENDING APPROVALS SECTION
+    if st.session_state.pending_approvals:
+        st.markdown("""
+        <div class="dashboard-section">
+            <div class="section-header">⏳ Pending Approvals</div>
+            <div class="section-content">
+        """, unsafe_allow_html=True)
+        
+        st.markdown("**Transactions awaiting approval:**")
+        
+        for approval in st.session_state.pending_approvals:
+            col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+            
+            with col1:
+                st.markdown(f"""
+                <div style="background: #fff3cd; padding: 1rem; border-radius: 6px; border-left: 4px solid #ffc107; margin: 0.5rem 0;">
+                    <strong>{approval['type']}: EUR {approval['amount']:,.2f}</strong><br>
+                    <small>{approval['from']} → {approval['to']}</small><br>
+                    <small style="color: #6c757d;">Requested: {approval['timestamp']}</small>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.write(f"**Approver:** {approval['approver_email']}")
+                st.write(f"**Status:** ⏳ Pending")
+            
+            with col3:
+                st.write(f"**Date:** {approval['date']}")
+                if approval['notes']:
+                    st.write(f"**Notes:** {approval['notes'][:30]}...")
+            
+            with col4:
+                # Simulate approval buttons (in real system, these would be in email)
+                if st.button("✅", key=f"approve_inv_{approval['id']}", help="Simulate Approval"):
+                    # Move from pending to approved
+                    approval['status'] = 'Approved'
+                    approval['approved_at'] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    st.session_state.investment_transactions.append(approval)
+                    st.session_state.pending_approvals.remove(approval)
+                    st.success(f"✅ Transaction approved and processed!")
+                    st.rerun()
+                
+                if st.button("❌", key=f"reject_inv_{approval['id']}", help="Simulate Rejection"):
+                    # Remove from pending (rejected)
+                    st.session_state.pending_approvals.remove(approval)
+                    st.error(f"❌ Transaction rejected and removed!")
+                    st.rerun()
+            
+            st.markdown("---")
+        
+        st.markdown("""
+        <div style="background: #e2e3e5; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+            <strong>🤖 Production System:</strong><br>
+            <small>In the real system, approvers receive emails with direct approve/reject links. 
+            The buttons above simulate the approver clicking those email links.</small>
         </div>
         """, unsafe_allow_html=True)
         
@@ -2041,12 +2225,12 @@ def show_investment_portfolio():
     
     # Transaction History (Optional - can be expandable)
     if transactions:
-        with st.expander(f"📋 Transaction History ({len(transactions)} transactions)"):
+        with st.expander(f"📋 Transaction History ({len(transactions)} approved transactions)"):
             # Show recent transactions in a nice format
             recent_transactions = sorted(transactions, key=lambda x: x['timestamp'], reverse=True)[:10]
             
             for transaction in recent_transactions:
-                col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 2])
+                col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 2, 2, 2, 1])
                 
                 with col1:
                     formatted_date = datetime.strptime(transaction['date'], "%Y-%m-%d").strftime("%d/%m/%Y")
@@ -2072,8 +2256,21 @@ def show_investment_portfolio():
                 with col5:
                     st.text(f"EUR {transaction['amount']:,.2f}")
                 
+                with col6:
+                    # Status indicator
+                    if transaction.get('status') == 'Approved':
+                        if transaction.get('approved_at'):
+                            st.markdown("✅ **Approved**")
+                        else:
+                            st.markdown("✅ **Direct**")
+                    else:
+                        st.markdown("⏳ **Pending**")
+                
                 if transaction.get('notes'):
                     st.caption(f"📝 {transaction['notes']}")
+                
+                if transaction.get('approved_at'):
+                    st.caption(f"✅ Approved: {transaction['approved_at']}")
                 
                 st.markdown("---")
 
