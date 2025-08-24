@@ -1097,7 +1097,6 @@ def show_executive_overview():
                 Liquidity Trend (Dynamic)
                 <span class="status-indicator status-good">Healthy</span>
             </div>
-            <div class="section-content">
         """, unsafe_allow_html=True)
         
         try:
@@ -1286,7 +1285,6 @@ def show_fx_risk():
                 📈 REAL Trading Charts (Yahoo Finance)
                 <span class="status-indicator status-good">REAL DATA</span>
             </div>
-            <div class="section-content">
         """, unsafe_allow_html=True)
         
         # Chart selector
@@ -1322,7 +1320,6 @@ def show_fx_risk():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">🚀 FX Deal Request</div>
-            <div class="section-content">
         """, unsafe_allow_html=True)
         
         with st.form("fx_deal_form"):
@@ -1367,7 +1364,6 @@ def show_fx_risk():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">🌍 Trading Markets Status</div>
-            <div class="section-content">
         """, unsafe_allow_html=True)
         
         # Your actual trading markets with correct timezones
@@ -1411,7 +1407,6 @@ def show_fx_risk():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">📋 Pending FX Deals</div>
-            <div class="section-content">
         """, unsafe_allow_html=True)
         
         for deal in st.session_state.fx_deals:
@@ -1472,7 +1467,6 @@ def show_daily_operations():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">📋 Operational Workflows</div>
-            <div class="section-content">
         """, unsafe_allow_html=True)
         
         # Workflow Form
@@ -1538,7 +1532,6 @@ def show_daily_operations():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">💸 Intraday Transfers</div>
-            <div class="section-content">
         """, unsafe_allow_html=True)
         
         companies = [
@@ -1599,7 +1592,6 @@ def show_daily_operations():
     st.markdown("""
     <div class="dashboard-section">
         <div class="section-header">📊 Cashflow vs Actuals</div>
-        <div class="section-content">
     """, unsafe_allow_html=True)
     
     st.info("📌 Chart placeholder - You can paste your Python chart code here!")
@@ -1644,7 +1636,6 @@ def show_daily_operations():
     st.markdown("""
     <div class="dashboard-section">
         <div class="section-header">💳 P-Card Requests</div>
-        <div class="section-content">
     """, unsafe_allow_html=True)
     
     col1, col2 = st.columns([1, 2])
@@ -1744,7 +1735,6 @@ def show_investment_portfolio():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">📝 Add Investment Transaction</div>
-            <div class="section-content">
         """, unsafe_allow_html=True)
         
         # Investment Transaction Form
@@ -1816,7 +1806,6 @@ def show_investment_portfolio():
         st.markdown("""
         <div class="dashboard-section">
             <div class="section-header">💰 Portfolio Summary</div>
-            <div class="section-content">
         """, unsafe_allow_html=True)
         
         # Current Balances Card
@@ -1853,7 +1842,6 @@ def show_investment_portfolio():
     st.markdown("""
     <div class="dashboard-section">
         <div class="section-header">📋 Investment Summary by Product</div>
-        <div class="section-content">
     """, unsafe_allow_html=True)
     
     if transactions:
@@ -1937,7 +1925,6 @@ def show_investment_portfolio():
     st.markdown("""
     <div class="dashboard-section">
         <div class="section-header">📈 Total Value Growth</div>
-        <div class="section-content">
     """, unsafe_allow_html=True)
     
     if transactions:
