@@ -1391,14 +1391,6 @@ def show_fx_risk():
                 is_open = open_minutes <= current_minutes <= close_minutes
             
             status = "🟢 OPEN" if is_open else "🔴 CLOSED"
-            
-            # Special highlighting for SEK
-            if "Stockholm" in market:
-                st.markdown(f"**{market}**: {status} ⚠️ *SEK Trading - Challenging pair*")
-            elif "Oslo" in market:
-                st.markdown(f"**{market}**: {status} ℹ️ *NOK - EU Market hours*")
-            else:
-                st.markdown(f"**{market}**: {status}")
         
         st.markdown("</div></div>", unsafe_allow_html=True)
     
