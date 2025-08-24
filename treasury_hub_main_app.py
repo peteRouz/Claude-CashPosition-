@@ -1237,7 +1237,6 @@ def show_fx_risk():
                 📊 REAL FX Rates vs EUR (Yahoo Finance)
                 <span class="status-indicator status-good">{status_indicator}</span>
             </div>
-            <div class="section-content">
         """, unsafe_allow_html=True)
         
         # Auto-refresh button and controls
